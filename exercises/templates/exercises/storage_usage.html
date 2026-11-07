@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Uzycie dysku{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-hdd"></i> Uzycie dysku</h1>
+    <a href="{% url 'exercise_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Powrot
+    </a>
+</div>
+
+{% if not using_cloudinary %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <strong>Wazne:</strong> baza danych (Postgres/Neon) i zdjecia (pliki media) to
+    <strong>dwa rozne miejsca przechowywania</strong> z osobnymi limitami.
+    Jesli hostujesz aplikacje na <strong>Render (darmowy plan)</strong> bez trwalego dysku
+    (persistent disk) lub zewnetrznego storage (np. Cloudinary) - wgrane zdjecia
+    <strong>moga zostac utracone</strong> przy restarcie/redeployu serwisu.
+    <br><br>
+    <i class="bi bi-cloud-arrow-up"></i>
+    <strong>Wskazowka:</strong> aplikacja ma juz przygotowana integracje z Cloudinary
+    (trwaly storage w chmurze, darmowy plan 25GB). Aby ja wlaczyc, ustaw
+    <code>USE_CLOUDINARY=True</code> i dane konta w pliku <code>.env</code>.
+</div>
+{% else %}
+<div class="alert alert-success">
+    <i class="bi bi-cloud-check-fill"></i>
+    <strong>Zdjecia sa przechowywane w Cloudinary</strong> (cloud: <code>{{ cloudinary_cloud_name }}</code>)
+    - trwale, niezalezne od restartu serwera.
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="detail-section h-100">
+            <h5><i class="bi bi-database"></i> Baza danych (Postgres / Neon)</h5>
+            {% if db_available %}
+                <p class="mb-1"><strong>{{ db_size_mb }} MB</strong> / {{ neon_limit_mb }} MB (limit Neon)</p>
+                <div class="progress" style="height: 24px;">
+                    <div class="progress-bar {% if db_percent >= 85 %}bg-danger{% elif db_percent >= 60 %}bg-warning{% else %}bg-success{% endif %}"
+                         role="progressbar" style="width: {{ db_percent }}%;">
+                        {{ db_percent }}%
+                    </div>
+                </div>
+                <small class="text-muted">Silnik bazy: {{ db_vendor }}</small>
+            {% else %}
+                <p class="text-muted">Nie udalo sie ustalic rozmiaru bazy dla tego silnika ({{ db_vendor }}).</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="detail-section h-100">
+            {% if using_cloudinary %}
+                <h5><i class="bi bi-cloud"></i> Cloudinary (storage zdjec)</h5>
+                {% if cloudinary_usage %}
+                    <p class="mb-1"><strong>{{ cloudinary_usage.storage_mb }} MB</strong> uzyte w Cloudinary</p>
+                    {% if cloudinary_percent is not None %}
+                        <div class="progress" style="height: 24px;">
+                            <div class="progress-bar {% if cloudinary_percent >= 85 %}bg-danger{% elif cloudinary_percent >= 60 %}bg-warning{% else %}bg-success{% endif %}"
+                                 role="progressbar" style="width: {{ cloudinary_percent }}%;">
+                                {{ cloudinary_percent }}%
+                            </div>
+                        </div>
+                    {% endif %}
+                    <small class="text-muted">
+                        Plan: {{ cloudinary_usage.plan|default:"-" }} |
+                        Obiektow: {{ cloudinary_usage.objects_count|default:"-" }} |
+                        Transfer (ten miesiac): {{ cloudinary_usage.bandwidth_mb|default:"-" }} MB
+                    </small>
+                {% else %}
+                    <p class="text-muted">
+                        <i class="bi bi-exclamation-circle"></i>
+                        Nie udalo sie pobrac danych z Cloudinary. Sprawdz dane logowania (API_KEY/API_SECRET)
+                        w pliku <code>.env</code> oraz czy pakiet <code>cloudinary</code> jest zainstalowany.
+                    </p>
+                {% endif %}
+            {% else %}
+                <h5><i class="bi bi-images"></i> Zdjecia (pliki media - dysk lokalny)</h5>
+                <p class="mb-1"><strong>{{ media_size_mb }} MB</strong> ({{ media_file_count }} plikow)</p>
+                <p class="text-muted small mb-0">
+                    Limit zalezny od hostingu (np. Render) - NIE wliczane do limitu Neon.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="stats-panel mb-4">
+    <div class="stat-box">
+        <span class="stat-number">{{ total_exercises }}</span>
+        <span class="stat-label">Cwiczen (wraz z wariantami)</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ total_images }}</span>
+        <span class="stat-label">Zdjec razem</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">5</span>
+        <span class="stat-label">Limit zdjec / wariant</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{% if using_cloudinary %}Cloudinary{% else %}Dysk lokalny{% endif %}</span>
+        <span class="stat-label">Miejsce przechowywania zdjec</span>
+    </div>
+</div>
+
+{% if largest_images %}
+<div class="detail-section">
+    <h5><i class="bi bi-sort-down"></i> 5 najwiekszych zdjec</h5>
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Cwiczenie</th>
+                <th>Rozmiar</th>
+                <th>Podglad</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for img in largest_images %}
+            <tr>
+                <td>{{ img.exercise_name }}</td>
+                <td>{{ img.size_mb }} MB</td>
+                <td><a href="{{ img.url }}" target="_blank">Zobacz</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -79,7 +79,10 @@
             <label class="form-label"><i class="bi bi-images"></i> Dodaj zdjecia</label>
             {{ image_form.images }}
             {% if image_form.images.errors %}<div class="invalid-feedback-custom">{{ image_form.images.errors|first }}</div>{% endif %}
-            <small class="text-muted">Mozesz wybrac wiele plikow naraz (Ctrl+klik). Max 10 plikow, 5MB kazdy. Duze zdjecia zostana automatycznie zmniejszone.</small>
+            <small class="text-muted">
+                Limit: <strong>{{ existing_images_count }} / 5</strong> zdjec dla tego wariantu.
+                Max 5MB na plik. Duze zdjecia zostana automatycznie zmniejszone.
+            </small>
         </div>
 
         {% if exercise and exercise.images.all %}

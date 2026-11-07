@@ -5,6 +5,7 @@ from .models import MuscleGroup, Equipment, Exercise, ExerciseImage
 class ExerciseImageInline(admin.TabularInline):
     model = ExerciseImage
     extra = 1
+    max_num = 5
     fields = ('image', 'is_cover', 'order')
 
 

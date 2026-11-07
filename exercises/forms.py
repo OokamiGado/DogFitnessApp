@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from .models import MuscleGroup, Equipment, Exercise
 
 MAX_IMAGE_SIZE_MB = 5
-MAX_IMAGES_COUNT = 10
+MAX_IMAGES_PER_EXERCISE = 5
 
 
 class MuscleGroupForm(forms.ModelForm):
@@ -109,10 +109,18 @@ class MultipleFileField(forms.FileField):
 
 
 class ExerciseImageUploadForm(forms.Form):
+    """Formularz uploadu zdjec. Przyjmuje 'existing_count' - liczbe zdjec,
+    ktore dane cwiczenie (wariant) juz posiada - zeby wyliczyc limit
+    MAX_IMAGES_PER_EXERCISE lacznie (stare + nowe)."""
+
     images = MultipleFileField(
         required=False,
         widget=MultipleFileInput(attrs={'class': 'form-control', 'multiple': True})
     )
+
+    def __init__(self, *args, existing_count=0, **kwargs):
+        self.existing_count = existing_count
+        super().__init__(*args, **kwargs)
 
     def clean_images(self):
         images = self.cleaned_data.get('images')
@@ -122,8 +130,13 @@ class ExerciseImageUploadForm(forms.Form):
         if not isinstance(images, list):
             images = [images]
 
-        if len(images) > MAX_IMAGES_COUNT:
-            raise ValidationError(f'Mozesz dodac maksymalnie {MAX_IMAGES_COUNT} zdjec naraz.')
+        total_after = self.existing_count + len(images)
+        if total_after > MAX_IMAGES_PER_EXERCISE:
+            allowed_now = max(MAX_IMAGES_PER_EXERCISE - self.existing_count, 0)
+            raise ValidationError(
+                f'Ten wariant cwiczenia moze miec maksymalnie {MAX_IMAGES_PER_EXERCISE} zdjec. '
+                f'Masz juz {self.existing_count}, mozesz dodac jeszcze {allowed_now}.'
+            )
 
         for img in images:
             if img.size > MAX_IMAGE_SIZE_MB * 1024 * 1024:

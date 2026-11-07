@@ -26,4 +26,7 @@ urlpatterns = [
     path('equipment/add/', views.equipment_create, name='equipment_create'),
     path('equipment/<int:pk>/edit/', views.equipment_update, name='equipment_update'),
     path('equipment/<int:pk>/delete/', views.equipment_delete, name='equipment_delete'),
+
+    # Uzycie dysku
+    path('storage/', views.storage_usage, name='storage_usage'),
 ]

@@ -3,11 +3,14 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from django.db import connection
 from django.db.models import Q, Case, When, IntegerField
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from .models import MuscleGroup, Equipment, Exercise, ExerciseImage
 from .forms import MuscleGroupForm, EquipmentForm, ExerciseForm, ExerciseImageUploadForm
+from . import storage_utils
 
 EXERCISES_PER_PAGE = 25
 
@@ -18,6 +21,8 @@ SORT_OPTIONS = [
     ('name_desc', 'Nazwa Z-A'),
     ('difficulty', 'Poziom trudnosci'),
 ]
+
+NEON_DB_LIMIT_MB = getattr(settings, 'NEON_DB_LIMIT_MB', 1024)
 
 
 # ============ MUSCLE GROUP ============
@@ -232,7 +237,7 @@ def _create_images_with_order(exercise, images):
 def exercise_create(request):
     if request.method == 'POST':
         form = ExerciseForm(request.POST)
-        image_form = ExerciseImageUploadForm(request.POST, request.FILES)
+        image_form = ExerciseImageUploadForm(request.POST, request.FILES, existing_count=0)
 
         if form.is_valid() and image_form.is_valid():
             exercise = form.save()
@@ -250,22 +255,24 @@ def exercise_create(request):
             return redirect('exercise_detail', pk=exercise.pk)
     else:
         form = ExerciseForm()
-        image_form = ExerciseImageUploadForm()
+        image_form = ExerciseImageUploadForm(existing_count=0)
 
     return render(request, 'exercises/exercise_form.html', {
         'form': form,
         'image_form': image_form,
-        'title': 'Dodaj cwiczenie'
+        'title': 'Dodaj cwiczenie',
+        'existing_images_count': 0,
     })
 
 
 @login_required
 def exercise_update(request, pk):
     exercise = get_object_or_404(Exercise, pk=pk)
+    existing_count = exercise.images.count()
 
     if request.method == 'POST':
         form = ExerciseForm(request.POST, instance=exercise)
-        image_form = ExerciseImageUploadForm(request.POST, request.FILES)
+        image_form = ExerciseImageUploadForm(request.POST, request.FILES, existing_count=existing_count)
 
         if form.is_valid() and image_form.is_valid():
             form.save()
@@ -288,13 +295,14 @@ def exercise_update(request, pk):
             return redirect('exercise_detail', pk=exercise.pk)
     else:
         form = ExerciseForm(instance=exercise)
-        image_form = ExerciseImageUploadForm()
+        image_form = ExerciseImageUploadForm(existing_count=existing_count)
 
     return render(request, 'exercises/exercise_form.html', {
         'form': form,
         'image_form': image_form,
         'title': 'Edytuj cwiczenie',
         'exercise': exercise,
+        'existing_images_count': existing_count,
     })
 
 
@@ -394,3 +402,66 @@ def exercise_image_reorder(request, pk):
         ExerciseImage.objects.filter(pk=image_id, exercise=exercise).update(order=idx)
 
     return JsonResponse({'status': 'ok'})
+
+
+# ============ STORAGE / UZYCIE DYSKU ============
+
+@login_required
+def storage_usage(request):
+    """Dashboard pokazujacy zuzycie bazy danych (Postgres/Neon) i miejsca na zdjecia.
+
+    UWAGA - DWA/TRZY NIEZALEZNE LIMITY:
+    1. Baza danych (Postgres/Neon) - limit 1GB, liczony przez pg_database_size()
+    2. Zdjecia na dysku lokalnym serwera (np. Render) - limit zalezny od hostingu,
+       dysk bywa EFEMERYCZNY na darmowym planie (pliki gina przy restarcie)
+    3. Zdjecia w Cloudinary (jesli USE_CLOUDINARY=True) - trwale, z wlasnym
+       darmowym limitem (25GB storage na darmowym planie Cloudinary)
+    """
+
+    db_size_bytes = storage_utils.get_database_size_bytes()
+    media_size_bytes, media_file_count = storage_utils.get_media_size_bytes()
+
+    db_size_mb = storage_utils.bytes_to_mb(db_size_bytes)
+    media_size_mb = storage_utils.bytes_to_mb(media_size_bytes)
+
+    db_percent = None
+    if db_size_mb is not None and NEON_DB_LIMIT_MB:
+        db_percent = round(min(db_size_mb / NEON_DB_LIMIT_MB * 100, 100), 1)
+
+    total_images = ExerciseImage.objects.count()
+    total_exercises = Exercise.objects.count()
+
+    largest_images = storage_utils.get_largest_images(limit=5)
+
+    using_cloudinary = getattr(settings, 'USE_CLOUDINARY', False)
+    cloudinary_usage = storage_utils.get_cloudinary_usage() if using_cloudinary else None
+    cloudinary_cloud_name = None
+    if using_cloudinary:
+        cloudinary_cloud_name = getattr(settings, 'CLOUDINARY_STORAGE', {}).get('CLOUD_NAME')
+
+    cloudinary_percent = None
+    if cloudinary_usage and cloudinary_usage.get('credits_limit'):
+        try:
+            cloudinary_percent = round(
+                min(cloudinary_usage['credits_used'] / cloudinary_usage['credits_limit'] * 100, 100), 1
+            )
+        except (TypeError, ZeroDivisionError):
+            cloudinary_percent = None
+
+    context = {
+        'db_size_mb': db_size_mb,
+        'db_available': db_size_mb is not None,
+        'media_size_mb': media_size_mb,
+        'media_file_count': media_file_count,
+        'total_images': total_images,
+        'total_exercises': total_exercises,
+        'neon_limit_mb': NEON_DB_LIMIT_MB,
+        'db_percent': db_percent,
+        'largest_images': largest_images,
+        'db_vendor': connection.vendor,
+        'using_cloudinary': using_cloudinary,
+        'cloudinary_usage': cloudinary_usage,
+        'cloudinary_cloud_name': cloudinary_cloud_name,
+        'cloudinary_percent': cloudinary_percent,
+    }
+    return render(request, 'exercises/storage_usage.html', context)
