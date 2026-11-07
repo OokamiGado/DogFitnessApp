@@ -79,15 +79,17 @@
             <label class="form-label"><i class="bi bi-images"></i> Dodaj zdjecia</label>
             {{ image_form.images }}
             {% if image_form.images.errors %}<div class="invalid-feedback-custom">{{ image_form.images.errors|first }}</div>{% endif %}
-            <small class="text-muted">Mozesz wybrac wiele plikow naraz (Ctrl+klik). Max 10 plikow, 5MB kazdy.</small>
+            <small class="text-muted">Mozesz wybrac wiele plikow naraz (Ctrl+klik). Max 10 plikow, 5MB kazdy. Duze zdjecia zostana automatycznie zmniejszone.</small>
         </div>
 
         {% if exercise and exercise.images.all %}
             <div class="mb-3">
-                <label class="form-label">Istniejace zdjecia - wybierz okladke <i class="bi bi-star-fill" style="color:#D4AF37;"></i></label>
-                <div class="row">
+                <label class="form-label">
+                    Istniejace zdjecia - przeciagnij aby zmienic kolejnosc, wybierz okladke <i class="bi bi-star-fill" style="color:#D4AF37;"></i>
+                </label>
+                <div class="row" id="existing-images-sortable" data-reorder-url="{% url 'exercise_image_reorder' exercise.pk %}">
                     {% for img in exercise.images.all %}
-                    <div class="col-3 mb-2 text-center">
+                    <div class="col-3 mb-2 text-center sortable-image-item" data-id="{{ img.pk }}">
                         <div class="cover-select-wrapper">
                             <img src="{{ img.image.url }}" class="img-fluid rounded mb-1" style="aspect-ratio: 1; object-fit: cover;" alt="Zdjecie">
                             <label class="cover-radio-label">
@@ -95,6 +97,7 @@
                                 Okladka
                             </label>
                         </div>
+                        <span class="drag-handle-hint"><i class="bi bi-arrows-move"></i> przeciagnij</span>
                         <form method="post" action="{% url 'exercise_image_delete' img.pk %}" class="image-delete-form mt-1">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-danger w-100">

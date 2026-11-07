@@ -48,6 +48,11 @@ h1, h2, h3, h4, h5 {
     color: var(--primary) !important;
 }
 
+.navbar-text-custom {
+    color: #D4C9A8;
+    font-weight: 500;
+}
+
 /* ============ PRZYCISKI ============ */
 .btn-primary {
     background-color: var(--primary);
@@ -94,7 +99,7 @@ h1, h2, h3, h4, h5 {
     border-radius: 25px;
 }
 
-/* ============ KARTY ĆWICZEŃ ============ */
+/* ============ KARTY CWICZEN ============ */
 .exercise-card {
     border: none;
     border-radius: 16px;
@@ -133,7 +138,82 @@ h1, h2, h3, h4, h5 {
     color: var(--navy);
 }
 
-/* ============ BADGE TRUDNOŚCI ============ */
+/* ============ WARIANTY - ZAKLADKI NA KARCIE ============ */
+.variant-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 10px 12px 0 12px;
+    white-space: nowrap;
+    scrollbar-width: thin;
+}
+
+.variant-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.variant-tabs::-webkit-scrollbar-thumb {
+    background: #D4C9A8;
+    border-radius: 4px;
+}
+
+.variant-tab {
+    flex-shrink: 0;
+    border: none;
+    background-color: var(--gray-light);
+    color: #888;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.variant-tab.active {
+    background-color: var(--navy);
+    color: var(--primary);
+}
+
+.variant-tab:hover:not(.active) {
+    background-color: #e2d9c0;
+}
+
+/* ============ WARIANTY - NAWIGACJA NA STRONIE SZCZEGOLOW ============ */
+.variant-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    white-space: nowrap;
+}
+
+.variant-pill {
+    flex-shrink: 0;
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 20px;
+    background-color: var(--gray-light);
+    color: var(--navy);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border: 1px solid #D4C9A8;
+    transition: all 0.2s;
+}
+
+.variant-pill.active {
+    background-color: var(--primary);
+    color: var(--navy);
+    border-color: var(--primary);
+}
+
+.variant-pill:hover:not(.active) {
+    background-color: #e2d9c0;
+    color: var(--navy);
+}
+
+/* ============ BADGE TRUDNOSCI ============ */
 .badge-difficulty-easy {
     background-color: var(--success) !important;
     color: #FFFFFF !important;
@@ -162,6 +242,37 @@ h1, h2, h3, h4, h5 {
 .badge-equipment {
     background-color: #E8E2CF !important;
     color: #7A6A3A !important;
+}
+
+/* ============ STATYSTYKI ============ */
+.stats-panel {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.stat-box {
+    background: white;
+    border-radius: 14px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    text-align: center;
+    flex: 1;
+    min-width: 110px;
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.78rem;
+    color: #999;
+    margin-top: 2px;
 }
 
 /* ============ WYSZUKIWARKA / FILTRY ============ */
@@ -234,7 +345,24 @@ h1, h2, h3, h4, h5 {
     margin-top: 0.3rem;
 }
 
-/* ============ STRONA SZCZEGÓŁÓW ============ */
+.cover-select-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.cover-radio-label {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ============ STRONA SZCZEGOLOW ============ */
 .detail-section {
     background: white;
     border-radius: 16px;
@@ -245,7 +373,7 @@ h1, h2, h3, h4, h5 {
 .video-embed-wrapper {
     position: relative;
     width: 100%;
-    padding-bottom: 56.25%; /* 16:9 */
+    padding-bottom: 56.25%;
     border-radius: 12px;
     overflow: hidden;
     margin-bottom: 1.5rem;
@@ -259,6 +387,15 @@ h1, h2, h3, h4, h5 {
     width: 100%;
     height: 100%;
     border: none;
+}
+
+/* ============ ARCHIWUM ============ */
+.archived-badge {
+    background-color: #999;
+    color: white;
+    border-radius: 12px;
+    padding: 0.3em 0.8em;
+    font-size: 0.8rem;
 }
 
 /* ============ EMPTY STATE ============ */
@@ -288,4 +425,22 @@ h1, h2, h3, h4, h5 {
 .alert-warning {
     background-color: #F7EFD9;
     color: #8A6D1F;
+}
+
+.alert-danger {
+    background-color: #F7E0E3;
+    color: #A4243B;
+}
+
+/* ============ PAGINACJA ============ */
+.pagination .page-link {
+    border-radius: 10px;
+    margin: 0 3px;
+    color: var(--navy);
+    border: 1px solid #D4C9A8;
+}
+
+.pagination .page-link:hover {
+    background-color: var(--primary);
+    color: var(--navy);
 }

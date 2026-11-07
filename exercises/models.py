@@ -91,15 +91,52 @@ class Exercise(models.Model):
         return self.parent_exercise if self.parent_exercise else self
 
     def get_cover_image(self):
-        """Zwraca zdjecie oznaczone jako okladka, albo pierwsze dostepne zdjecie"""
+        """Zwraca zdjecie oznaczone jako okladka, albo pierwsze dostepne zdjecie (wg kolejnosci)"""
         cover = self.images.filter(is_cover=True).first()
-        return cover or self.images.first()
+        return cover or self.images.order_by('order', 'pk').first()
 
 
 class ExerciseImage(models.Model):
     exercise = models.ForeignKey(Exercise, related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='exercises/')
     is_cover = models.BooleanField(default=False, verbose_name="Zdjecie okladkowe")
+    order = models.PositiveIntegerField(default=0, verbose_name="Kolejnosc")
+
+    MAX_DIMENSION = 1600
+
+    class Meta:
+        ordering = ['order', 'pk']
+        verbose_name = "Zdjecie cwiczenia"
+        verbose_name_plural = "Zdjecia cwiczen"
 
     def __str__(self):
         return f"Zdjecie dla {self.exercise.name}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._resize_if_needed()
+
+    def _resize_if_needed(self):
+        """Automatycznie skaluje i kompresuje zdjecie, jesli jest wieksze niz MAX_DIMENSION.
+        Dzialanie 'pod maska' - bez wplywu na UI, oszczedza miejsce i czas wczytywania."""
+        try:
+            from PIL import Image as PILImage
+            if not self.image or not self.image.name:
+                return
+            path = self.image.path
+            with PILImage.open(path) as img:
+                width, height = img.size
+                if width <= self.MAX_DIMENSION and height <= self.MAX_DIMENSION:
+                    return
+
+                img = img.convert('RGB') if img.mode in ('RGBA', 'P') else img
+                img.thumbnail((self.MAX_DIMENSION, self.MAX_DIMENSION), PILImage.LANCZOS)
+
+                save_kwargs = {'optimize': True}
+                fmt = (img.format or 'JPEG')
+                if path.lower().endswith(('.jpg', '.jpeg')):
+                    save_kwargs['quality'] = 85
+                    fmt = 'JPEG'
+                img.save(path, format=fmt, **save_kwargs)
+        except Exception:
+            pass

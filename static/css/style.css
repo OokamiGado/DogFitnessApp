@@ -444,3 +444,25 @@ h1, h2, h3, h4, h5 {
     background-color: var(--primary);
     color: var(--navy);
 }
+
+
+/* ============ DRAG & DROP ZDJEC (Runda 3) ============ */
+.sortable-image-item {
+    cursor: grab;
+    transition: transform 0.15s ease;
+}
+
+.sortable-image-item:active {
+    cursor: grabbing;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.drag-handle-hint {
+    font-size: 0.7rem;
+    color: #999;
+    display: block;
+    margin-top: 2px;
+}

@@ -1,8 +1,11 @@
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Case, When, IntegerField
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from .models import MuscleGroup, Equipment, Exercise, ExerciseImage
 from .forms import MuscleGroupForm, EquipmentForm, ExerciseForm, ExerciseImageUploadForm
 
@@ -215,6 +218,16 @@ def exercise_detail(request, pk):
     })
 
 
+def _create_images_with_order(exercise, images):
+    """Tworzy obiekty ExerciseImage z poprawna, narastajaca kolejnoscia."""
+    start_order = exercise.images.count()
+    created = []
+    for idx, img in enumerate(images):
+        obj = ExerciseImage.objects.create(exercise=exercise, image=img, order=start_order + idx)
+        created.append(obj)
+    return created
+
+
 @login_required
 def exercise_create(request):
     if request.method == 'POST':
@@ -225,11 +238,10 @@ def exercise_create(request):
             exercise = form.save()
 
             images = request.FILES.getlist('images')
-            for img in images:
-                ExerciseImage.objects.create(exercise=exercise, image=img)
+            _create_images_with_order(exercise, images)
 
             if images and not exercise.images.filter(is_cover=True).exists():
-                first_img = exercise.images.order_by('pk').first()
+                first_img = exercise.images.order_by('order', 'pk').first()
                 if first_img:
                     first_img.is_cover = True
                     first_img.save()
@@ -259,8 +271,7 @@ def exercise_update(request, pk):
             form.save()
 
             images = request.FILES.getlist('images')
-            for img in images:
-                ExerciseImage.objects.create(exercise=exercise, image=img)
+            _create_images_with_order(exercise, images)
 
             cover_id = request.POST.get('cover_image')
             if cover_id:
@@ -268,7 +279,7 @@ def exercise_update(request, pk):
                 ExerciseImage.objects.filter(pk=cover_id, exercise=exercise).update(is_cover=True)
 
             if not exercise.images.filter(is_cover=True).exists():
-                first_img = exercise.images.order_by('pk').first()
+                first_img = exercise.images.order_by('order', 'pk').first()
                 if first_img:
                     first_img.is_cover = True
                     first_img.save()
@@ -364,3 +375,22 @@ def exercise_image_delete(request, pk):
         image.delete()
         messages.success(request, 'Zdjecie zostalo usuniete.')
     return redirect('exercise_update', pk=exercise_pk)
+
+
+@login_required
+def exercise_image_reorder(request, pk):
+    """Endpoint AJAX do zapisywania nowej kolejnosci zdjec (drag&drop)."""
+    exercise = get_object_or_404(Exercise, pk=pk)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Metoda niedozwolona.'}, status=405)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        order_list = payload.get('order', [])
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({'status': 'error', 'message': 'Nieprawidlowe dane.'}, status=400)
+
+    for idx, image_id in enumerate(order_list):
+        ExerciseImage.objects.filter(pk=image_id, exercise=exercise).update(order=idx)
+
+    return JsonResponse({'status': 'ok'})

@@ -28,6 +28,9 @@
                         <a class="nav-link" href="{% url 'exercise_list' %}"><i class="bi bi-list-ul"></i> Cwiczenia</a>
                         <a class="nav-link" href="{% url 'muscle_group_list' %}"><i class="bi bi-diagram-3"></i> Grupy miesniowe</a>
                         <a class="nav-link" href="{% url 'equipment_list' %}"><i class="bi bi-tools"></i> Sprzet</a>
+                        {% if user.is_staff %}
+                            <a class="nav-link" href="/admin/" target="_blank"><i class="bi bi-gear"></i> Panel admina</a>
+                        {% endif %}
                         <span class="navbar-text-custom mx-3"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
                         <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Wyloguj</a>
                     {% endif %}
@@ -49,7 +52,23 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.exercise-card').forEach(function (card) {
                 const tabs = card.querySelectorAll('.variant-tab');
@@ -79,6 +98,27 @@
                     }
                 });
             });
+
+            const sortableEl = document.getElementById('existing-images-sortable');
+            if (sortableEl && typeof Sortable !== 'undefined') {
+                new Sortable(sortableEl, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function () {
+                        const ids = Array.from(sortableEl.children).map(function (el) {
+                            return el.dataset.id;
+                        });
+                        fetch(sortableEl.dataset.reorderUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken'),
+                            },
+                            body: JSON.stringify({ order: ids })
+                        });
+                    }
+                });
+            }
         });
     </script>
 </body>

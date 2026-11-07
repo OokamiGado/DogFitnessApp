@@ -12,6 +12,7 @@ urlpatterns = [
     path('exercises/<int:pk>/duplicate/', views.exercise_duplicate, name='exercise_duplicate'),
     path('exercises/<int:pk>/restore/', views.exercise_restore, name='exercise_restore'),
     path('exercises/<int:pk>/delete-permanent/', views.exercise_delete_permanent, name='exercise_delete_permanent'),
+    path('exercises/<int:pk>/images/reorder/', views.exercise_image_reorder, name='exercise_image_reorder'),
     path('exercises/image/<int:pk>/delete/', views.exercise_image_delete, name='exercise_image_delete'),
 
     # Grupy miesniowe
