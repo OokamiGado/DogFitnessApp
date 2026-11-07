@@ -1,3 +1,4 @@
+import re
 from django.db import models
 
 
@@ -50,6 +51,22 @@ class Exercise(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_youtube_embed_url(self):
+        """Zwraca URL do embedowania video YouTube, albo None jeśli to nie YouTube/niepoprawny link"""
+        if not self.video_url:
+            return None
+
+        patterns = [
+            r'(?:youtube\.com\/watch\?v=)([^&\n?#]+)',
+            r'(?:youtu\.be\/)([^&\n?#]+)',
+            r'(?:youtube\.com\/embed\/)([^&\n?#]+)',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, self.video_url)
+            if match:
+                return f'https://www.youtube.com/embed/{match.group(1)}'
+        return None
 
 
 class ExerciseImage(models.Model):

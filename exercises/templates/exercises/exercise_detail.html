@@ -2,56 +2,84 @@
 {% block title %}{{ exercise.name }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <h1>{{ exercise.name }}</h1>
     <div>
-        <a href="{% url 'exercise_update' exercise.pk %}" class="btn btn-outline-secondary">Edytuj</a>
-        <a href="{% url 'exercise_delete' exercise.pk %}" class="btn btn-outline-danger">Usuń</a>
-        <a href="{% url 'exercise_list' %}" class="btn btn-secondary">Powrót</a>
+        <a href="{% url 'exercise_update' exercise.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Edytuj
+        </a>
+        <a href="{% url 'exercise_delete' exercise.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Usuń
+        </a>
+        <a href="{% url 'exercise_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Powrót
+        </a>
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-8">
-        <p>{{ exercise.description|linebreaks }}</p>
+        <div class="detail-section mb-4">
+            {% with embed_url=exercise.get_youtube_embed_url %}
+                {% if embed_url %}
+                    <div class="video-embed-wrapper">
+                        <iframe src="{{ embed_url }}" allowfullscreen></iframe>
+                    </div>
+                {% elif exercise.video_url %}
+                    <p>
+                        <i class="bi bi-play-circle"></i>
+                        <strong>Video:</strong>
+                        <a href="{{ exercise.video_url }}" target="_blank">{{ exercise.video_url }}</a>
+                    </p>
+                {% endif %}
+            {% endwith %}
 
-        {% if exercise.video_url %}
-            <p><strong>Video:</strong> <a href="{{ exercise.video_url }}" target="_blank">{{ exercise.video_url }}</a></p>
-        {% endif %}
+            <h5><i class="bi bi-file-text"></i> Opis</h5>
+            <p>{{ exercise.description|linebreaks }}</p>
 
-        <p><strong>Poziom trudności:</strong> {{ exercise.get_difficulty_display }}</p>
-
-        <p><strong>Grupy mięśniowe:</strong>
-            {% for group in exercise.muscle_groups.all %}
-                <span class="badge bg-info">{{ group.name }}</span>
-            {% endfor %}
-        </p>
-
-        <p><strong>Potrzebny sprzęt:</strong>
-            {% for item in exercise.equipment.all %}
-                <span class="badge bg-warning text-dark">{{ item.name }}</span>
-            {% empty %}
-                <span class="text-muted">Brak - ćwiczenie bez sprzętu</span>
-            {% endfor %}
-        </p>
-
-        {% if exercise.contraindications %}
-            <div class="alert alert-warning">
-                <strong>⚠️ Przeciwwskazania:</strong> {{ exercise.contraindications }}
+            <div class="mb-3">
+                <span class="badge badge-difficulty-{{ exercise.difficulty }} fs-6">
+                    {{ exercise.get_difficulty_display }}
+                </span>
             </div>
-        {% endif %}
+
+            <h5><i class="bi bi-diagram-3"></i> Grupy mięśniowe</h5>
+            <p>
+                {% for group in exercise.muscle_groups.all %}
+                    <span class="badge badge-muscle">{{ group.name }}</span>
+                {% endfor %}
+            </p>
+
+            <h5><i class="bi bi-tools"></i> Potrzebny sprzęt</h5>
+            <p>
+                {% for item in exercise.equipment.all %}
+                    <span class="badge badge-equipment">{{ item.name }}</span>
+                {% empty %}
+                    <span class="text-muted">Brak - ćwiczenie bez sprzętu</span>
+                {% endfor %}
+            </p>
+
+            {% if exercise.contraindications %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Przeciwwskazania:</strong> {{ exercise.contraindications }}
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     <div class="col-md-4">
-        <h5>Zdjęcia</h5>
-        <div class="row">
-            {% for img in exercise.images.all %}
-            <div class="col-6 mb-2">
-                <img src="{{ img.image.url }}" class="img-fluid rounded" alt="Zdjęcie">
+        <div class="detail-section">
+            <h5><i class="bi bi-images"></i> Zdjęcia</h5>
+            <div class="row">
+                {% for img in exercise.images.all %}
+                <div class="col-6 mb-2">
+                    <img src="{{ img.image.url }}" class="img-fluid rounded" style="aspect-ratio: 1; object-fit: cover;" alt="Zdjęcie">
+                </div>
+                {% empty %}
+                <p class="text-muted">Brak zdjęć</p>
+                {% endfor %}
             </div>
-            {% empty %}
-            <p class="text-muted">Brak zdjęć</p>
-            {% endfor %}
         </div>
     </div>
 </div>

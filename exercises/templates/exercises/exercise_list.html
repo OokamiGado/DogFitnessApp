@@ -2,70 +2,111 @@
 {% block title %}Ćwiczenia{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Baza ćwiczeń</h1>
-    <a href="{% url 'exercise_create' %}" class="btn btn-primary">+ Dodaj ćwiczenie</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-activity" style="color: #D4AF37;"></i> Baza ćwiczeń</h1>
+    <a href="{% url 'exercise_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Dodaj ćwiczenie
+    </a>
 </div>
 
-<!-- Filtry -->
-<form method="get" class="row g-2 mb-4">
-    <div class="col-auto">
-        <select name="muscle_group" class="form-select" onchange="this.form.submit()">
-            <option value="">Wszystkie grupy mięśniowe</option>
-            {% for group in muscle_groups %}
-                <option value="{{ group.id }}" {% if selected_muscle_group == group.id|stringformat:"s" %}selected{% endif %}>
-                    {{ group.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <select name="difficulty" class="form-select" onchange="this.form.submit()">
-            <option value="">Wszystkie poziomy trudności</option>
-            {% for value, label in difficulty_choices %}
-                <option value="{{ value }}" {% if selected_difficulty == value %}selected{% endif %}>
-                    {{ label }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-    {% if selected_muscle_group or selected_difficulty %}
-        <div class="col-auto">
-            <a href="{% url 'exercise_list' %}" class="btn btn-outline-secondary">Wyczyść filtry</a>
+<!-- Wyszukiwarka i filtry -->
+<div class="search-bar">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" class="form-control border-0" placeholder="Szukaj po nazwie lub opisie..." value="{{ search_query }}">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="muscle_group" class="form-select" onchange="this.form.submit()">
+                <option value="">Wszystkie grupy mięśniowe</option>
+                {% for group in muscle_groups %}
+                    <option value="{{ group.id }}" {% if selected_muscle_group == group.id|stringformat:"s" %}selected{% endif %}>
+                        {{ group.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="difficulty" class="form-select" onchange="this.form.submit()">
+                <option value="">Wszystkie poziomy trudności</option>
+                {% for value, label in difficulty_choices %}
+                    <option value="{{ value }}" {% if selected_difficulty == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+        </div>
+    </form>
+    {% if search_query or selected_muscle_group or selected_difficulty %}
+        <div class="mt-2">
+            <a href="{% url 'exercise_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Wyczyść filtry
+            </a>
         </div>
     {% endif %}
-</form>
+</div>
 
 <!-- Lista ćwiczeń -->
 <div class="row">
     {% for exercise in exercises %}
     <div class="col-md-4 mb-4">
-        <div class="card h-100">
+        <div class="card exercise-card">
             {% if exercise.images.first %}
-                <img src="{{ exercise.images.first.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ exercise.name }}">
+                <img src="{{ exercise.images.first.image.url }}" class="card-img-top" alt="{{ exercise.name }}">
             {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                    <span class="text-muted">Brak zdjęcia</span>
+                <div class="card-img-placeholder">
+                    <i class="bi bi-image"></i>
                 </div>
             {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ exercise.name }}</h5>
-                <p class="card-text text-muted">{{ exercise.description|truncatewords:15 }}</p>
-                <span class="badge bg-secondary">{{ exercise.get_difficulty_display }}</span>
-                {% for group in exercise.muscle_groups.all %}
-                    <span class="badge bg-info">{{ group.name }}</span>
-                {% endfor %}
+                <p class="card-text text-muted small">{{ exercise.description|truncatewords:15 }}</p>
+
+                <div class="mb-2">
+                    <span class="badge badge-difficulty-{{ exercise.difficulty }}">
+                        {{ exercise.get_difficulty_display }}
+                    </span>
+                    {% for group in exercise.muscle_groups.all|slice:":2" %}
+                        <span class="badge badge-muscle">{{ group.name }}</span>
+                    {% endfor %}
+                    {% if exercise.muscle_groups.count > 2 %}
+                        <span class="badge bg-light text-muted">+{{ exercise.muscle_groups.count|add:"-2" }}</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="card-footer">
-                <a href="{% url 'exercise_detail' exercise.pk %}" class="btn btn-sm btn-primary">Szczegóły</a>
-                <a href="{% url 'exercise_update' exercise.pk %}" class="btn btn-sm btn-outline-secondary">Edytuj</a>
-                <a href="{% url 'exercise_delete' exercise.pk %}" class="btn btn-sm btn-outline-danger">Usuń</a>
+            <div class="card-footer bg-white border-0 pb-3">
+                <a href="{% url 'exercise_detail' exercise.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye"></i> Szczegóły
+                </a>
+                <a href="{% url 'exercise_update' exercise.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'exercise_delete' exercise.pk %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                </a>
             </div>
         </div>
     </div>
     {% empty %}
     <div class="col-12">
-        <p class="text-center text-muted">Brak ćwiczeń. Dodaj pierwsze!</p>
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p class="mb-3">
+                {% if search_query or selected_muscle_group or selected_difficulty %}
+                    Nie znaleziono ćwiczeń spełniających kryteria.
+                {% else %}
+                    Brak ćwiczeń w bazie. Dodaj pierwsze!
+                {% endif %}
+            </p>
+            <a href="{% url 'exercise_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Dodaj ćwiczenie
+            </a>
+        </div>
     </div>
     {% endfor %}
 </div>

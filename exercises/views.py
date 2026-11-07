@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.db.models import Q
 from .models import MuscleGroup, Equipment, Exercise, ExerciseImage
 from .forms import MuscleGroupForm, EquipmentForm, ExerciseForm, ExerciseImageUploadForm
 
@@ -104,15 +105,21 @@ def equipment_delete(request, pk):
     return render(request, 'exercises/equipment_confirm_delete.html', {
         'equipment': equipment
     })
-    
+
+
 # ============ EXERCISE ============
 
 def exercise_list(request):
     exercises = Exercise.objects.prefetch_related('muscle_groups', 'equipment', 'images').all()
 
-    # Proste filtrowanie (opcjonalne, przyda się w przyszłości)
+    search_query = request.GET.get('q', '').strip()
     muscle_group_filter = request.GET.get('muscle_group')
     difficulty_filter = request.GET.get('difficulty')
+
+    if search_query:
+        exercises = exercises.filter(
+            Q(name__icontains=search_query) | Q(description__icontains=search_query)
+        )
 
     if muscle_group_filter:
         exercises = exercises.filter(muscle_groups__id=muscle_group_filter)
@@ -120,11 +127,12 @@ def exercise_list(request):
         exercises = exercises.filter(difficulty=difficulty_filter)
 
     return render(request, 'exercises/exercise_list.html', {
-        'exercises': exercises,
+        'exercises': exercises.distinct(),
         'muscle_groups': MuscleGroup.objects.all(),
         'difficulty_choices': Exercise.DIFFICULTY_CHOICES,
         'selected_muscle_group': muscle_group_filter,
         'selected_difficulty': difficulty_filter,
+        'search_query': search_query,
     })
 
 
