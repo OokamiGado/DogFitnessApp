@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label">Nazwa</label>
+        {{ form.name }}
+    </div>
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+    <a href="{% url 'equipment_list' %}" class="btn btn-secondary">Anuluj</a>
+</form>
+{% endblock %}
