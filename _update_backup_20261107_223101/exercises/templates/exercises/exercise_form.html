@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ title }}</h1>
+
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Nazwa</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="invalid-feedback-custom">{{ form.name.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Opis</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="invalid-feedback-custom">{{ form.description.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Link do video (YouTube/Vimeo, opcjonalnie)</label>
+            {{ form.video_url }}
+            {% if form.video_url.errors %}<div class="invalid-feedback-custom">{{ form.video_url.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Poziom trudności</label>
+            {{ form.difficulty }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Grupy mięśniowe</label>
+            <div class="checkbox-group">
+                {{ form.muscle_groups }}
+            </div>
+            {% if form.muscle_groups.errors %}<div class="invalid-feedback-custom">{{ form.muscle_groups.errors|first }}</div>{% endif %}
+            <small class="text-muted">Nie widzisz potrzebnej grupy? <a href="{% url 'muscle_group_create' %}" target="_blank">Dodaj nową</a></small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Potrzebny sprzęt</label>
+            <div class="checkbox-group">
+                {{ form.equipment }}
+            </div>
+            <small class="text-muted">Nie widzisz potrzebnego sprzętu? <a href="{% url 'equipment_create' %}" target="_blank">Dodaj nowy</a></small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Przeciwwskazania (opcjonalnie)</label>
+            {{ form.contraindications }}
+        </div>
+
+        <hr class="my-4">
+
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-images"></i> Dodaj zdjęcia</label>
+            {{ image_form.images }}
+            {% if image_form.images.errors %}<div class="invalid-feedback-custom">{{ image_form.images.errors|first }}</div>{% endif %}
+            <small class="text-muted">Możesz wybrać wiele plików naraz (Ctrl+klik). Max 10 plików, 5MB każdy.</small>
+        </div>
+
+        {% if exercise and exercise.images.all %}
+            <div class="mb-3">
+                <label class="form-label">Istniejące zdjęcia</label>
+                <div class="row">
+                    {% for img in exercise.images.all %}
+                    <div class="col-3 mb-2 text-center">
+                        <img src="{{ img.image.url }}" class="img-fluid rounded mb-1" style="aspect-ratio: 1; object-fit: cover;" alt="Zdjęcie">
+                        <form method="post" action="{% url 'exercise_image_delete' img.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+            <a href="{% url 'exercise_list' %}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

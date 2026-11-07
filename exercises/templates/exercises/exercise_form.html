@@ -31,25 +31,25 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Poziom trudności</label>
+            <label class="form-label">Poziom trudnosci</label>
             {{ form.difficulty }}
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Grupy mięśniowe</label>
+            <label class="form-label">Grupy miesniowe</label>
             <div class="checkbox-group">
                 {{ form.muscle_groups }}
             </div>
             {% if form.muscle_groups.errors %}<div class="invalid-feedback-custom">{{ form.muscle_groups.errors|first }}</div>{% endif %}
-            <small class="text-muted">Nie widzisz potrzebnej grupy? <a href="{% url 'muscle_group_create' %}" target="_blank">Dodaj nową</a></small>
+            <small class="text-muted">Nie widzisz potrzebnej grupy? <a href="{% url 'muscle_group_create' %}" target="_blank">Dodaj nowa</a></small>
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Potrzebny sprzęt</label>
+            <label class="form-label">Potrzebny sprzet</label>
             <div class="checkbox-group">
                 {{ form.equipment }}
             </div>
-            <small class="text-muted">Nie widzisz potrzebnego sprzętu? <a href="{% url 'equipment_create' %}" target="_blank">Dodaj nowy</a></small>
+            <small class="text-muted">Nie widzisz potrzebnego sprzetu? <a href="{% url 'equipment_create' %}" target="_blank">Dodaj nowy</a></small>
         </div>
 
         <div class="mb-3">
@@ -59,21 +59,43 @@
 
         <hr class="my-4">
 
+        <h5 class="mb-3"><i class="bi bi-diagram-2"></i> Warianty</h5>
+
         <div class="mb-3">
-            <label class="form-label"><i class="bi bi-images"></i> Dodaj zdjęcia</label>
+            <label class="form-label">To cwiczenie jest wariantem innego cwiczenia</label>
+            {{ form.parent_exercise }}
+            <small class="text-muted">Wybierz, jesli to np. trudniejsza/latwiejsza wersja istniejacego cwiczenia</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Nazwa wariantu (wymagana, jesli wybrano powyzej)</label>
+            {{ form.variant_name }}
+            {% if form.variant_name.errors %}<div class="invalid-feedback-custom">{{ form.variant_name.errors|first }}</div>{% endif %}
+        </div>
+
+        <hr class="my-4">
+
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-images"></i> Dodaj zdjecia</label>
             {{ image_form.images }}
             {% if image_form.images.errors %}<div class="invalid-feedback-custom">{{ image_form.images.errors|first }}</div>{% endif %}
-            <small class="text-muted">Możesz wybrać wiele plików naraz (Ctrl+klik). Max 10 plików, 5MB każdy.</small>
+            <small class="text-muted">Mozesz wybrac wiele plikow naraz (Ctrl+klik). Max 10 plikow, 5MB kazdy.</small>
         </div>
 
         {% if exercise and exercise.images.all %}
             <div class="mb-3">
-                <label class="form-label">Istniejące zdjęcia</label>
+                <label class="form-label">Istniejace zdjecia - wybierz okladke <i class="bi bi-star-fill" style="color:#D4AF37;"></i></label>
                 <div class="row">
                     {% for img in exercise.images.all %}
                     <div class="col-3 mb-2 text-center">
-                        <img src="{{ img.image.url }}" class="img-fluid rounded mb-1" style="aspect-ratio: 1; object-fit: cover;" alt="Zdjęcie">
-                        <form method="post" action="{% url 'exercise_image_delete' img.pk %}">
+                        <div class="cover-select-wrapper">
+                            <img src="{{ img.image.url }}" class="img-fluid rounded mb-1" style="aspect-ratio: 1; object-fit: cover;" alt="Zdjecie">
+                            <label class="cover-radio-label">
+                                <input type="radio" name="cover_image" value="{{ img.pk }}" {% if img.is_cover %}checked{% endif %}>
+                                Okladka
+                            </label>
+                        </div>
+                        <form method="post" action="{% url 'exercise_image_delete' img.pk %}" class="image-delete-form mt-1">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-danger w-100">
                                 <i class="bi bi-trash"></i>

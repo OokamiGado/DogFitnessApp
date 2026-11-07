@@ -1,26 +1,57 @@
 {% extends 'base.html' %}
-{% block title %}Ćwiczenia{% endblock %}
+{% block title %}Cwiczenia{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-activity" style="color: #D4AF37;"></i> Baza ćwiczeń</h1>
-    <a href="{% url 'exercise_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Dodaj ćwiczenie
-    </a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-activity" style="color: #D4AF37;"></i> Baza cwiczen</h1>
+    <div>
+        <a href="{% url 'exercise_archived_list' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-archive"></i> Archiwum
+        </a>
+        <a href="{% url 'exercise_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Dodaj cwiczenie
+        </a>
+    </div>
 </div>
 
-<!-- Wyszukiwarka i filtry -->
+<div class="stats-panel mb-4">
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.total }}</span>
+        <span class="stat-label">Wszystkich</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.main }}</span>
+        <span class="stat-label">Glownych</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.variants }}</span>
+        <span class="stat-label">Wariantow</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number" style="color: #7FB069;">{{ stats.easy }}</span>
+        <span class="stat-label">Latwych</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number" style="color: #D4AF37;">{{ stats.medium }}</span>
+        <span class="stat-label">Srednich</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number" style="color: #A4243B;">{{ stats.hard }}</span>
+        <span class="stat-label">Trudnych</span>
+    </div>
+</div>
+
 <div class="search-bar">
     <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-5">
+        <div class="col-md-4">
             <div class="input-group">
                 <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
                 <input type="text" name="q" class="form-control border-0" placeholder="Szukaj po nazwie lub opisie..." value="{{ search_query }}">
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select name="muscle_group" class="form-select" onchange="this.form.submit()">
-                <option value="">Wszystkie grupy mięśniowe</option>
+                <option value="">Grupa miesniowa</option>
                 {% for group in muscle_groups %}
                     <option value="{{ group.id }}" {% if selected_muscle_group == group.id|stringformat:"s" %}selected{% endif %}>
                         {{ group.name }}
@@ -28,11 +59,20 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select name="difficulty" class="form-select" onchange="this.form.submit()">
-                <option value="">Wszystkie poziomy trudności</option>
+                <option value="">Trudnosc</option>
                 {% for value, label in difficulty_choices %}
                     <option value="{{ value }}" {% if selected_difficulty == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="sort" class="form-select" onchange="this.form.submit()">
+                {% for value, label in sort_options %}
+                    <option value="{{ value }}" {% if selected_sort == value %}selected{% endif %}>
                         {{ label }}
                     </option>
                 {% endfor %}
@@ -45,49 +85,92 @@
     {% if search_query or selected_muscle_group or selected_difficulty %}
         <div class="mt-2">
             <a href="{% url 'exercise_list' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-x-circle"></i> Wyczyść filtry
+                <i class="bi bi-x-circle"></i> Wyczysc filtry
             </a>
         </div>
     {% endif %}
 </div>
 
-<!-- Lista ćwiczeń -->
 <div class="row">
-    {% for exercise in exercises %}
+    {% for exercise in page_obj %}
     <div class="col-md-4 mb-4">
-        <div class="card exercise-card">
-            {% if exercise.images.first %}
-                <img src="{{ exercise.images.first.image.url }}" class="card-img-top" alt="{{ exercise.name }}">
-            {% else %}
-                <div class="card-img-placeholder">
-                    <i class="bi bi-image"></i>
-                </div>
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">{{ exercise.name }}</h5>
-                <p class="card-text text-muted small">{{ exercise.description|truncatewords:15 }}</p>
+        <div class="card exercise-card" data-root-id="{{ exercise.pk }}">
 
-                <div class="mb-2">
-                    <span class="badge badge-difficulty-{{ exercise.difficulty }}">
-                        {{ exercise.get_difficulty_display }}
-                    </span>
-                    {% for group in exercise.muscle_groups.all|slice:":2" %}
-                        <span class="badge badge-muscle">{{ group.name }}</span>
-                    {% endfor %}
-                    {% if exercise.muscle_groups.count > 2 %}
-                        <span class="badge bg-light text-muted">+{{ exercise.muscle_groups.count|add:"-2" }}</span>
+            {% with variants=exercise.active_variants %}
+
+            {% if variants %}
+            <div class="variant-tabs">
+                <button type="button" class="variant-tab active" data-target="content-{{ exercise.pk }}" data-detail-url="{% url 'exercise_detail' exercise.pk %}">
+                    {{ exercise.variant_name|default:"Podstawowy" }}
+                </button>
+                {% for v in variants %}
+                <button type="button" class="variant-tab" data-target="content-{{ v.pk }}" data-detail-url="{% url 'exercise_detail' v.pk %}">
+                    {{ v.variant_name|default:v.name }}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="variant-content" id="content-{{ exercise.pk }}" style="display:block;">
+                {% with cover=exercise.get_cover_image %}
+                    {% if cover %}
+                        <img src="{{ cover.image.url }}" class="card-img-top" alt="{{ exercise.name }}">
+                    {% else %}
+                        <div class="card-img-placeholder"><i class="bi bi-image"></i></div>
                     {% endif %}
+                {% endwith %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ exercise.name }}</h5>
+                    <p class="card-text text-muted small">{{ exercise.description|truncatewords:15 }}</p>
+                    <div class="mb-2">
+                        <span class="badge badge-difficulty-{{ exercise.difficulty }}">
+                            {{ exercise.get_difficulty_display }}
+                        </span>
+                        {% for group in exercise.muscle_groups.all|slice:":2" %}
+                            <span class="badge badge-muscle">{{ group.name }}</span>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
+
+            {% for v in variants %}
+            <div class="variant-content" id="content-{{ v.pk }}" style="display:none;">
+                {% with cover=v.get_cover_image %}
+                    {% if cover %}
+                        <img src="{{ cover.image.url }}" class="card-img-top" alt="{{ v.name }}">
+                    {% else %}
+                        <div class="card-img-placeholder"><i class="bi bi-image"></i></div>
+                    {% endif %}
+                {% endwith %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ v.name }}</h5>
+                    <p class="card-text text-muted small">{{ v.description|truncatewords:15 }}</p>
+                    <div class="mb-2">
+                        <span class="badge badge-difficulty-{{ v.difficulty }}">
+                            {{ v.get_difficulty_display }}
+                        </span>
+                        {% for group in v.muscle_groups.all|slice:":2" %}
+                            <span class="badge badge-muscle">{{ group.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% endwith %}
+
             <div class="card-footer bg-white border-0 pb-3">
-                <a href="{% url 'exercise_detail' exercise.pk %}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-eye"></i> Szczegóły
+                <a href="{% url 'exercise_detail' exercise.pk %}" class="btn btn-sm btn-primary detail-link-btn">
+                    <i class="bi bi-eye"></i> Szczegoly
                 </a>
                 <a href="{% url 'exercise_update' exercise.pk %}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-pencil"></i>
                 </a>
+                <a href="{% url 'exercise_duplicate' exercise.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-copy"></i>
+                </a>
                 <a href="{% url 'exercise_delete' exercise.pk %}" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash"></i>
+                    <i class="bi bi-archive"></i>
                 </a>
             </div>
         </div>
@@ -98,16 +181,33 @@
             <i class="bi bi-inbox"></i>
             <p class="mb-3">
                 {% if search_query or selected_muscle_group or selected_difficulty %}
-                    Nie znaleziono ćwiczeń spełniających kryteria.
+                    Nie znaleziono cwiczen spelniajacych kryteria.
                 {% else %}
-                    Brak ćwiczeń w bazie. Dodaj pierwsze!
+                    Brak cwiczen w bazie. Dodaj pierwsze!
                 {% endif %}
             </p>
             <a href="{% url 'exercise_create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Dodaj ćwiczenie
+                <i class="bi bi-plus-lg"></i> Dodaj cwiczenie
             </a>
         </div>
     </div>
     {% endfor %}
 </div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-center mt-4">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page=1">&laquo;&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">&raquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.paginator.num_pages }}">&raquo;&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
 {% endblock %}
