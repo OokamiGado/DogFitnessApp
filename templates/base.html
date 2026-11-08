@@ -26,6 +26,7 @@
                 <div class="navbar-nav ms-auto align-items-lg-center">
                     {% if user.is_authenticated %}
                         <a class="nav-link" href="{% url 'exercise_list' %}"><i class="bi bi-list-ul"></i> Cwiczenia</a>
+                        <a class="nav-link" href="{% url 'owner_list' %}"><i class="bi bi-people"></i> Klienci</a>
                         <a class="nav-link" href="{% url 'muscle_group_list' %}"><i class="bi bi-diagram-3"></i> Grupy miesniowe</a>
                         <a class="nav-link" href="{% url 'equipment_list' %}"><i class="bi bi-tools"></i> Sprzet</a>
                         <a class="nav-link" href="{% url 'storage_usage' %}"><i class="bi bi-hdd"></i> Uzycie dysku</a>

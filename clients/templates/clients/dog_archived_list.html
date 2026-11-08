@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Archiwum psow{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-archive"></i> Archiwum psow</h1>
+    <a href="{% url 'dog_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Powrot do listy
+    </a>
+</div>
+
+<div class="form-card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Imie psa</th>
+                <th>Wlasciciel</th>
+                <th>Zarchiwizowano</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dog in dogs %}
+            <tr>
+                <td>{{ dog.name }}</td>
+                <td>{{ dog.owner.full_name }}</td>
+                <td>{{ dog.updated_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    <form method="post" action="{% url 'dog_restore' dog.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Przywroc
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'dog_delete_permanent' dog.pk %}" style="display:inline;" onsubmit="return confirm('Czy na pewno chcesz usunac tego psa NA ZAWSZE? Tej operacji nie mozna odwrocic.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i> Usun na zawsze
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">Archiwum jest puste.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

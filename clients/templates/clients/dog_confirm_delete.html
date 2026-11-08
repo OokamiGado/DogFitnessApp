@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Archiwizuj psa{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h1 class="mb-4"><i class="bi bi-archive text-warning"></i> Przenies do archiwum</h1>
+    <p>Czy na pewno chcesz przeniesc psa <strong>{{ dog.name }}</strong> do archiwum?</p>
+    <p class="text-muted">Pies nie zostanie usuniety na zawsze - znajdziesz go w sekcji "Archiwum" i bedziesz mogl go przywrocic.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="bi bi-archive"></i> Tak, przenies do archiwum</button>
+        <a href="{% url 'owner_detail' dog.owner.pk %}" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>
+{% endblock %}

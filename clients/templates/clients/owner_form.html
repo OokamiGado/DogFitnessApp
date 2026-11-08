@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ title }}</h1>
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Imie</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}<div class="invalid-feedback-custom">{{ form.first_name.errors|first }}</div>{% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Nazwisko</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}<div class="invalid-feedback-custom">{{ form.last_name.errors|first }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Telefon</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div class="invalid-feedback-custom">{{ form.phone.errors|first }}</div>{% endif %}
+            <small class="text-muted">Format dowolny - system tylko ostrzeze, jesli numer wyglada niepoprawnie.</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email (opcjonalnie)</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="invalid-feedback-custom">{{ form.email.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Notatki</label>
+            {{ form.notes }}
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+            <a href="{% url 'owner_list' %}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

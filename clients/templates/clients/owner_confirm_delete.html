@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Archiwizuj klienta{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h1 class="mb-4"><i class="bi bi-archive text-warning"></i> Przenies do archiwum</h1>
+    <p>Czy na pewno chcesz przeniesc klienta <strong>{{ owner.full_name }}</strong> do archiwum?</p>
+    <p class="text-muted">Klient nie zostanie usuniety na zawsze - znajdziesz go w sekcji "Archiwum" i bedziesz mogl go przywrocic.</p>
+
+    {% if active_dogs_count > 0 %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Ten klient ma <strong>{{ active_dogs_count }}</strong> aktywnych psow w bazie. Nie zostana one automatycznie zarchiwizowane.
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="bi bi-archive"></i> Tak, przenies do archiwum</button>
+        <a href="{% url 'owner_list' %}" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>
+{% endblock %}
