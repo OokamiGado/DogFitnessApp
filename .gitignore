@@ -1,8 +1,28 @@
+# ============ Python / Django ============
 venv/
 __pycache__/
 *.pyc
-.env
+*.pyo
 db.sqlite3
-media/
 staticfiles/
+
+# ============ Konfiguracja / sekrety ============
+.env
+
+# ============ Media (zdjecia cwiczen wgrane przez uzytkownikow) ============
+media/
+
+# ============ Dane testowe Pauli (zdjecia + zrodlowe pliki) ============
+paula_images/
+paula_exercise_images.zip
+
+# ============ Backupy ze skryptow _update*.py ============
+_update_backup_*/
+_update2_backup_*/
+_update3_backup_*/
+_update4_backup_*/
+_update5_backup_*/
+
+# ============ Edytor / IDE ============
 .vscode/
+.idea/

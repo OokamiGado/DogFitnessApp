@@ -94,11 +94,14 @@
 <div class="row">
     {% for exercise in page_obj %}
     <div class="col-md-4 mb-4">
-        <div class="card exercise-card" data-root-id="{{ exercise.pk }}">
+        <div class="card exercise-card position-relative" data-root-id="{{ exercise.pk }}">
 
             {% with variants=exercise.active_variants %}
 
             {% if variants %}
+            <span class="variant-count-badge" title="To cwiczenie ma {{ variants.count|add:1 }} wariantow">
+                <i class="bi bi-shuffle"></i> {{ variants.count|add:1 }} warianty
+            </span>
             <div class="variant-tabs">
                 <button type="button" class="variant-tab active" data-target="content-{{ exercise.pk }}" data-detail-url="{% url 'exercise_detail' exercise.pk %}">
                     {{ exercise.variant_name|default:"Podstawowy" }}
