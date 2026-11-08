@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Usun profil{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h1 class="mb-4"><i class="bi bi-trash text-danger"></i> Usun profil wizualny</h1>
+    <p>Czy na pewno chcesz usunac profil <strong>{{ profile.name }}</strong>?</p>
+    {% if profile.is_default %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Ten profil jest obecnie domyslny. Po usunieciu inny profil (jesli istnieje) zostanie automatycznie ustawiony jako domyslny.
+        </div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Tak, usun</button>
+        <a href="{% url 'branding_list' %}" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>
+{% endblock %}

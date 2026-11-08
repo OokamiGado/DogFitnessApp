@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ title }}</h1>
+
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Nazwa profilu</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="invalid-feedback-custom">{{ form.name.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-image"></i> Logo (opcjonalnie)</label>
+            {{ form.logo }}
+            {% if profile and profile.logo %}
+                <div class="mt-2">
+                    <img src="{{ profile.logo.url }}" style="max-height:80px;" alt="Aktualne logo">
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Kolor belek sekcji</label>
+                {{ form.primary_color }}
+                {% if form.primary_color.errors %}<div class="invalid-feedback-custom">{{ form.primary_color.errors|first }}</div>{% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Kolor tekstu naglowkow</label>
+                {{ form.text_color }}
+                {% if form.text_color.errors %}<div class="invalid-feedback-custom">{{ form.text_color.errors|first }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Czcionka</label>
+            {{ form.font_family }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Tekst w stopce</label>
+            {{ form.footer_text }}
+        </div>
+
+        <div class="form-check mb-3">
+            {{ form.is_default }}
+            <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                Ustaw jako profil domyslny
+            </label>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+            <a href="{% url 'branding_list' %}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

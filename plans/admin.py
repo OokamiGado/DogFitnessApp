@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     TrainingPlan, ExerciseSet, PlanExercise,
     PlanTemplate, TemplateExerciseSet, TemplatePlanExercise,
+    BrandingProfile,
 )
 
 
@@ -57,3 +58,10 @@ class PlanTemplateAdmin(admin.ModelAdmin):
 class TemplateExerciseSetAdmin(admin.ModelAdmin):
     list_display = ('name', 'template', 'order')
     inlines = [TemplatePlanExerciseInline]
+
+
+@admin.register(BrandingProfile)
+class BrandingProfileAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_default', 'font_family', 'primary_color', 'updated_at')
+    list_filter = ('is_default', 'font_family')
+    search_fields = ('name',)

@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from .models import (
     TrainingPlan, ExerciseSet, PlanExercise,
     PlanTemplate, TemplateExerciseSet, TemplatePlanExercise,
-    FREQUENCY_PERIOD_CHOICES,
+    BrandingProfile, FREQUENCY_PERIOD_CHOICES,
 )
 
 
@@ -104,3 +104,40 @@ class TemplatePlanExerciseForm(forms.ModelForm):
             'reps_text': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. 6-10x, 15-60 sek'}),
             'notes_text': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Uwagi ogolne...'}),
         }
+
+
+class BrandingProfileForm(forms.ModelForm):
+    class Meta:
+        model = BrandingProfile
+        fields = ['name', 'logo', 'primary_color', 'text_color', 'font_family', 'footer_text', 'is_default']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. Domyslny, Wersja swiateczna'}),
+            'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'primary_color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
+            'text_color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
+            'font_family': forms.Select(attrs={'class': 'form-select'}),
+            'footer_text': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tekst wyswietlany w stopce dokumentow'}),
+            'is_default': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if len(name) < 2:
+            raise ValidationError('Nazwa profilu musi miec przynajmniej 2 znaki.')
+        return name
+
+    def _validate_hex(self, value, field_label):
+        value = (value or '').strip()
+        if not value.startswith('#') or len(value) != 7:
+            raise ValidationError(f'{field_label} musi byc w formacie HEX, np. #D9D9D9.')
+        try:
+            int(value[1:], 16)
+        except ValueError:
+            raise ValidationError(f'{field_label} musi byc poprawnym kolorem HEX, np. #D9D9D9.')
+        return value
+
+    def clean_primary_color(self):
+        return self._validate_hex(self.cleaned_data.get('primary_color'), 'Kolor belek sekcji')
+
+    def clean_text_color(self):
+        return self._validate_hex(self.cleaned_data.get('text_color'), 'Kolor tekstu naglowkow')

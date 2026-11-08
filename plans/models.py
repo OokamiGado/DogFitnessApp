@@ -189,3 +189,64 @@ class PlanExercise(models.Model):
 
     def __str__(self):
         return f"{self.exercise.name} w {self.exercise_set}"
+
+
+class BrandingProfile(models.Model):
+    """Szablon wizualny (branding) uzywany przy generowaniu dokumentow
+    PDF/DOCX (plan szczegolowy, fiszka treningowa) - Etap 4. Trener moze
+    miec wiele profili, ale tylko JEDEN moze byc oznaczony jako domyslny
+    (is_default) - ten jest uzywany automatycznie przy generowaniu
+    dokumentow, jesli nie wybrano innego."""
+
+    FONT_CHOICES = [
+        ('Helvetica', 'Helvetica (nowoczesna, bezszeryfowa)'),
+        ('Times-Roman', 'Times (klasyczna, szeryfowa)'),
+        ('Courier', 'Courier (maszynowa)'),
+    ]
+
+    name = models.CharField(max_length=100, verbose_name="Nazwa profilu", default="Domyslny")
+    logo = models.ImageField(upload_to='branding/', blank=True, null=True, verbose_name="Logo")
+    primary_color = models.CharField(
+        max_length=7, default="#D9D9D9", verbose_name="Kolor belek sekcji",
+        help_text="Kolor HEX, np. #D9D9D9 (jak w oryginalnych dokumentach Pauli)"
+    )
+    text_color = models.CharField(
+        max_length=7, default="#000000", verbose_name="Kolor tekstu naglowkow",
+        help_text="Kolor HEX tekstu na belkach sekcji"
+    )
+    font_family = models.CharField(
+        max_length=20, choices=FONT_CHOICES, default='Helvetica', verbose_name="Czcionka"
+    )
+    footer_text = models.CharField(
+        max_length=255, blank=True,
+        default="Pamietaj o rozgrzewce i cooldownie - antyposlizgowa nawierzchnia - jakosc > liczba powtorzen",
+        verbose_name="Tekst w stopce"
+    )
+    is_default = models.BooleanField(default=False, verbose_name="Profil domyslny")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_default', 'name']
+        verbose_name = "Profil wizualny (branding)"
+        verbose_name_plural = "Profile wizualne (branding)"
+
+    def __str__(self):
+        marker = " (domyslny)" if self.is_default else ""
+        return f"{self.name}{marker}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_default:
+            BrandingProfile.objects.exclude(pk=self.pk).update(is_default=False)
+
+    @classmethod
+    def get_default(cls):
+        """Zwraca domyslny profil brandingu. Jesli zaden nie jest oznaczony
+        jako domyslny, zwraca pierwszy dostepny, albo None jesli nie ma
+        zadnego profilu w bazie (uzywane w Etapie 4 przy generowaniu PDF)."""
+        profile = cls.objects.filter(is_default=True).first()
+        if profile:
+            return profile
+        return cls.objects.first()

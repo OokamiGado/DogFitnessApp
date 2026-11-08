@@ -53,4 +53,10 @@ urlpatterns = [
     path('template-plan-exercises/<int:pk>/delete/', views.template_exercise_delete, name='template_exercise_delete'),
     path('template-plan-exercises/<int:pk>/move-up/', views.template_exercise_move_up, name='template_exercise_move_up'),
     path('template-plan-exercises/<int:pk>/move-down/', views.template_exercise_move_down, name='template_exercise_move_down'),
+    # ============ BRANDING (Etap 3) ============
+    path('branding/', views.branding_list, name='branding_list'),
+    path('branding/add/', views.branding_create, name='branding_create'),
+    path('branding/<int:pk>/edit/', views.branding_update, name='branding_update'),
+    path('branding/<int:pk>/delete/', views.branding_delete, name='branding_delete'),
+    path('branding/<int:pk>/set-default/', views.branding_set_default, name='branding_set_default'),
 ]

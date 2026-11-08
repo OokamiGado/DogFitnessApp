@@ -9,10 +9,12 @@ from exercises.models import Exercise, MuscleGroup
 from .models import (
     TrainingPlan, ExerciseSet, PlanExercise,
     PlanTemplate, TemplateExerciseSet, TemplatePlanExercise,
+    BrandingProfile,
 )
 from .forms import (
     TrainingPlanForm, ExerciseSetForm, PlanExerciseForm,
     PlanTemplateForm, TemplateExerciseSetForm, TemplatePlanExerciseForm,
+    BrandingProfileForm,
 )
 
 EXERCISES_PER_PAGE = 20
@@ -668,3 +670,74 @@ def template_exercise_move_down(request, pk):
             t_pe.save()
             next_pe.save()
     return redirect('template_detail', pk=t_pe.exercise_set.template.pk)
+
+
+# ============ BRANDING PROFILE (Etap 3 - wyglad dokumentow) ============
+
+@login_required
+def branding_list(request):
+    profiles = BrandingProfile.objects.all()
+    return render(request, 'plans/branding_list.html', {'profiles': profiles})
+
+
+@login_required
+def branding_create(request):
+    if request.method == 'POST':
+        form = BrandingProfileForm(request.POST, request.FILES)
+        if form.is_valid():
+            profile = form.save()
+            if not BrandingProfile.objects.filter(is_default=True).exists():
+                profile.is_default = True
+                profile.save()
+            messages.success(request, f'Profil wizualny "{profile.name}" zostal utworzony.')
+            return redirect('branding_list')
+    else:
+        form = BrandingProfileForm()
+    return render(request, 'plans/branding_form.html', {
+        'form': form,
+        'title': 'Nowy profil wizualny',
+    })
+
+
+@login_required
+def branding_update(request, pk):
+    profile = get_object_or_404(BrandingProfile, pk=pk)
+    if request.method == 'POST':
+        form = BrandingProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profil wizualny zostal zaktualizowany.')
+            return redirect('branding_list')
+    else:
+        form = BrandingProfileForm(instance=profile)
+    return render(request, 'plans/branding_form.html', {
+        'form': form,
+        'profile': profile,
+        'title': 'Edytuj profil wizualny',
+    })
+
+
+@login_required
+def branding_delete(request, pk):
+    profile = get_object_or_404(BrandingProfile, pk=pk)
+    if request.method == 'POST':
+        was_default = profile.is_default
+        profile.delete()
+        if was_default:
+            fallback = BrandingProfile.objects.first()
+            if fallback:
+                fallback.is_default = True
+                fallback.save()
+        messages.success(request, 'Profil wizualny zostal usuniety.')
+        return redirect('branding_list')
+    return render(request, 'plans/branding_confirm_delete.html', {'profile': profile})
+
+
+@login_required
+def branding_set_default(request, pk):
+    profile = get_object_or_404(BrandingProfile, pk=pk)
+    if request.method == 'POST':
+        profile.is_default = True
+        profile.save()
+        messages.success(request, f'Profil "{profile.name}" zostal ustawiony jako domyslny.')
+    return redirect('branding_list')
