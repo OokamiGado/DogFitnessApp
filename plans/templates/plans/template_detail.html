@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}{{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-file-earmark-text"></i> {{ template.name }}</h1>
+    <div>
+        <a href="{% url 'template_update' template.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Edytuj
+        </a>
+        <a href="{% url 'template_delete' template.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-archive"></i> Archiwizuj
+        </a>
+        <a href="{% url 'template_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Powrot do listy
+        </a>
+    </div>
+</div>
+
+<p class="text-muted"><i class="bi bi-arrow-repeat"></i> Ten szablon zostal uzyty do utworzenia {{ template.plans_created.count }} planu(ow).</p>
+
+{% if template.training_goal %}
+<div class="detail-section mb-3">
+    <h5><i class="bi bi-bullseye"></i> Cel treningu</h5>
+    <p>{{ template.training_goal|linebreaks }}</p>
+</div>
+{% endif %}
+
+{% if template.safety_rules %}
+<div class="detail-section mb-4">
+    <h5><i class="bi bi-shield-check"></i> Wazne zasady i bezpieczenstwo</h5>
+    <p>{{ template.safety_rules|linebreaks }}</p>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Zestawy cwiczen</h4>
+    <a href="{% url 'template_set_create' template.pk %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Dodaj zestaw
+    </a>
+</div>
+
+{% for exercise_set in template.exercise_sets.all %}
+<div class="detail-section mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">
+            {{ exercise_set.name }}
+            {% if exercise_set.get_frequency_display_text %}
+                <span class="text-muted small">&mdash; wykonuj {{ exercise_set.get_frequency_display_text }}</span>
+            {% endif %}
+        </h5>
+        <div>
+            <form method="post" action="{% url 'template_set_move_up' exercise_set.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-up"></i></button>
+            </form>
+            <form method="post" action="{% url 'template_set_move_down' exercise_set.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-down"></i></button>
+            </form>
+            <a href="{% url 'template_set_update' exercise_set.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'template_exercise_select' exercise_set.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg"></i> Dodaj cwiczenie
+            </a>
+            <a href="{% url 'template_set_delete' exercise_set.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+        </div>
+    </div>
+
+    <table class="table table-sm">
+        <thead>
+            <tr><th>Cwiczenie</th><th>Ilosc</th><th>Akcje</th></tr>
+        </thead>
+        <tbody>
+            {% for pe in exercise_set.plan_exercises.all %}
+            <tr>
+                <td>{{ pe.exercise.name }}</td>
+                <td class="small text-muted">{{ pe.reps_text|default:"-" }}</td>
+                <td>
+                    <form method="post" action="{% url 'template_exercise_move_up' pe.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-up"></i></button>
+                    </form>
+                    <form method="post" action="{% url 'template_exercise_move_down' pe.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-down"></i></button>
+                    </form>
+                    <a href="{% url 'template_exercise_update' pe.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                    <form method="post" action="{% url 'template_exercise_delete' pe.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted">Brak cwiczen w tym zestawie.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% empty %}
+<div class="empty-state">
+    <i class="bi bi-inbox"></i>
+    <p>Ten szablon nie ma jeszcze zadnego zestawu cwiczen.</p>
+</div>
+{% endfor %}
+{% endblock %}

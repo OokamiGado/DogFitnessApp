@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Szablony planow{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-file-earmark-text" style="color: #D4AF37;"></i> Szablony planow</h1>
+    <div>
+        <a href="{% url 'template_archived_list' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-archive"></i> Archiwum
+        </a>
+        <a href="{% url 'template_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nowy szablon
+        </a>
+    </div>
+</div>
+
+<p class="text-muted">
+    Szablony sluza do szybkiego tworzenia planow treningowych dla psow - struktura (zestawy i cwiczenia)
+    jest KOPIOWANA do nowego planu, dzieki czemu mozesz ja swobodnie modyfikowac bez wplywu na szablon.
+</p>
+
+<div class="row">
+    {% for template in templates %}
+    <div class="col-md-4 mb-4">
+        <div class="card exercise-card">
+            <div class="card-body">
+                <h5 class="card-title">{{ template.name }}</h5>
+                <p class="text-muted small mb-1">
+                    <i class="bi bi-list-ol"></i> {{ template.exercise_sets.count }} zestaw(y)
+                </p>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-arrow-repeat"></i> Uzyty {{ template.plans_created.count }}x
+                </p>
+            </div>
+            <div class="card-footer bg-white border-0 pb-3">
+                <a href="{% url 'template_detail' template.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye"></i> Szczegoly
+                </a>
+                <a href="{% url 'template_update' template.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'template_delete' template.pk %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-archive"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p class="mb-3">Brak szablonow. Dodaj pierwszy, zeby przyspieszyc tworzenie planow!</p>
+            <a href="{% url 'template_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Nowy szablon
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

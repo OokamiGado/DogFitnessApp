@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Edytuj cwiczenie w szablonie{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-pencil"></i> {{ plan_exercise.exercise.name }}</h1>
+<p class="text-muted">
+    Szablon: <strong>{{ template.name }}</strong> | Zestaw: <strong>{{ plan_exercise.exercise_set.name }}</strong>
+</p>
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Cel</label>
+            {{ form.goal_text }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Wykonanie</label>
+            {{ form.execution_text }}
+            <small class="text-muted">Domyslnie skopiowane z opisu cwiczenia w katalogu - mozesz dostosowac.</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Ilosc / powtorzenia</label>
+            {{ form.reps_text }}
+            <small class="text-muted">np. "6-10x, 15-60 sek", "2-3 minuty", "10-20 przejsc".</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Uwagi</label>
+            {{ form.notes_text }}
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+            <a href="{% url 'template_detail' template.pk %}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

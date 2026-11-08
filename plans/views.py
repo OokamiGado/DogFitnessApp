@@ -6,8 +6,14 @@ from django.core.paginator import Paginator
 
 from clients.models import Dog
 from exercises.models import Exercise, MuscleGroup
-from .models import TrainingPlan, ExerciseSet, PlanExercise, PlanTemplate
-from .forms import TrainingPlanForm, ExerciseSetForm, PlanExerciseForm
+from .models import (
+    TrainingPlan, ExerciseSet, PlanExercise,
+    PlanTemplate, TemplateExerciseSet, TemplatePlanExercise,
+)
+from .forms import (
+    TrainingPlanForm, ExerciseSetForm, PlanExerciseForm,
+    PlanTemplateForm, TemplateExerciseSetForm, TemplatePlanExerciseForm,
+)
 
 EXERCISES_PER_PAGE = 20
 
@@ -381,3 +387,284 @@ def plan_exercise_move_down(request, pk):
             plan_exercise.save()
             next_pe.save()
     return redirect('plan_detail', pk=plan_exercise.exercise_set.plan.pk)
+
+
+# ============ PLAN TEMPLATE (zarzadzanie szablonami) ============
+
+@login_required
+def template_list(request):
+    templates = PlanTemplate.objects.filter(is_active=True)
+    return render(request, 'plans/template_list.html', {'templates': templates})
+
+
+@login_required
+def template_create(request):
+    if request.method == 'POST':
+        form = PlanTemplateForm(request.POST)
+        if form.is_valid():
+            template = form.save()
+            messages.success(request, f'Szablon "{template.name}" zostal utworzony.')
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = PlanTemplateForm()
+    return render(request, 'plans/template_form.html', {
+        'form': form,
+        'title': 'Nowy szablon planu',
+    })
+
+
+@login_required
+def template_detail(request, pk):
+    template = get_object_or_404(PlanTemplate, pk=pk)
+    return render(request, 'plans/template_detail.html', {'template': template})
+
+
+@login_required
+def template_update(request, pk):
+    template = get_object_or_404(PlanTemplate, pk=pk)
+    if request.method == 'POST':
+        form = PlanTemplateForm(request.POST, instance=template)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Szablon zostal zaktualizowany.')
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = PlanTemplateForm(instance=template)
+    return render(request, 'plans/template_form.html', {
+        'form': form,
+        'template': template,
+        'title': 'Edytuj szablon',
+    })
+
+
+@login_required
+def template_delete(request, pk):
+    template = get_object_or_404(PlanTemplate, pk=pk)
+    if request.method == 'POST':
+        template.is_active = False
+        template.save()
+        messages.success(request, 'Szablon zostal przeniesiony do archiwum.')
+        return redirect('template_list')
+    return render(request, 'plans/template_confirm_delete.html', {'template': template})
+
+
+@login_required
+def template_archived_list(request):
+    templates = PlanTemplate.objects.filter(is_active=False).order_by('-updated_at')
+    return render(request, 'plans/template_archived_list.html', {'templates': templates})
+
+
+@login_required
+def template_restore(request, pk):
+    template = get_object_or_404(PlanTemplate, pk=pk, is_active=False)
+    if request.method == 'POST':
+        template.is_active = True
+        template.save()
+        messages.success(request, 'Szablon zostal przywrocony.')
+    return redirect('template_archived_list')
+
+
+@login_required
+def template_delete_permanent(request, pk):
+    template = get_object_or_404(PlanTemplate, pk=pk, is_active=False)
+    if request.method == 'POST':
+        template.delete()
+        messages.success(request, 'Szablon zostal usuniety na zawsze.')
+    return redirect('template_archived_list')
+
+
+# ============ TEMPLATE EXERCISE SET ============
+
+@login_required
+def template_set_create(request, template_pk):
+    template = get_object_or_404(PlanTemplate, pk=template_pk)
+    if request.method == 'POST':
+        form = TemplateExerciseSetForm(request.POST)
+        if form.is_valid():
+            exercise_set = form.save(commit=False)
+            exercise_set.template = template
+            exercise_set.order = template.exercise_sets.count()
+            exercise_set.save()
+            messages.success(request, f'Zestaw "{exercise_set.name}" zostal dodany.')
+            return redirect('template_detail', pk=template.pk)
+    else:
+        default_name = f"Zestaw {template.exercise_sets.count() + 1}"
+        form = TemplateExerciseSetForm(initial={'name': default_name})
+    return render(request, 'plans/template_set_form.html', {
+        'form': form,
+        'template': template,
+        'title': 'Dodaj zestaw cwiczen',
+    })
+
+
+@login_required
+def template_set_update(request, pk):
+    exercise_set = get_object_or_404(TemplateExerciseSet, pk=pk)
+    if request.method == 'POST':
+        form = TemplateExerciseSetForm(request.POST, instance=exercise_set)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Zestaw zostal zaktualizowany.')
+            return redirect('template_detail', pk=exercise_set.template.pk)
+    else:
+        form = TemplateExerciseSetForm(instance=exercise_set)
+    return render(request, 'plans/template_set_form.html', {
+        'form': form,
+        'template': exercise_set.template,
+        'exercise_set': exercise_set,
+        'title': 'Edytuj zestaw',
+    })
+
+
+@login_required
+def template_set_delete(request, pk):
+    exercise_set = get_object_or_404(TemplateExerciseSet, pk=pk)
+    template_pk = exercise_set.template.pk
+    if request.method == 'POST':
+        exercise_set.delete()
+        messages.success(request, 'Zestaw zostal usuniety.')
+        return redirect('template_detail', pk=template_pk)
+    return render(request, 'plans/template_set_confirm_delete.html', {'exercise_set': exercise_set})
+
+
+@login_required
+def template_set_move_up(request, pk):
+    exercise_set = get_object_or_404(TemplateExerciseSet, pk=pk)
+    if request.method == 'POST':
+        siblings = list(exercise_set.template.exercise_sets.order_by('order', 'pk'))
+        idx = siblings.index(exercise_set)
+        if idx > 0:
+            prev_set = siblings[idx - 1]
+            exercise_set.order, prev_set.order = prev_set.order, exercise_set.order
+            exercise_set.save()
+            prev_set.save()
+    return redirect('template_detail', pk=exercise_set.template.pk)
+
+
+@login_required
+def template_set_move_down(request, pk):
+    exercise_set = get_object_or_404(TemplateExerciseSet, pk=pk)
+    if request.method == 'POST':
+        siblings = list(exercise_set.template.exercise_sets.order_by('order', 'pk'))
+        idx = siblings.index(exercise_set)
+        if idx < len(siblings) - 1:
+            next_set = siblings[idx + 1]
+            exercise_set.order, next_set.order = next_set.order, exercise_set.order
+            exercise_set.save()
+            next_set.save()
+    return redirect('template_detail', pk=exercise_set.template.pk)
+
+
+# ============ TEMPLATE PLAN EXERCISE (wybor z katalogu + edycja) ============
+
+@login_required
+def template_exercise_select(request, set_pk):
+    exercise_set = get_object_or_404(TemplateExerciseSet, pk=set_pk)
+
+    exercises = Exercise.objects.filter(is_active=True).prefetch_related(
+        'muscle_groups', 'contraindication_tags'
+    )
+
+    search_query = request.GET.get('q', '').strip()
+    muscle_group_filter = request.GET.get('muscle_group', '').strip()
+
+    if search_query:
+        exercises = exercises.filter(
+            Q(name__icontains=search_query) | Q(description__icontains=search_query) |
+            Q(variant_name__icontains=search_query)
+        )
+    if muscle_group_filter:
+        exercises = exercises.filter(muscle_groups__id=muscle_group_filter)
+
+    exercises = exercises.distinct().order_by('name')
+
+    paginator = Paginator(exercises, EXERCISES_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'plans/template_exercise_select.html', {
+        'exercise_set': exercise_set,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'muscle_group_filter': muscle_group_filter,
+        'muscle_groups': MuscleGroup.objects.all(),
+    })
+
+
+@login_required
+def template_exercise_add(request, set_pk, exercise_pk):
+    exercise_set = get_object_or_404(TemplateExerciseSet, pk=set_pk)
+    exercise = get_object_or_404(Exercise, pk=exercise_pk)
+
+    if request.method == 'POST':
+        t_pe = TemplatePlanExercise.objects.create(
+            exercise_set=exercise_set,
+            exercise=exercise,
+            order=exercise_set.plan_exercises.count(),
+            goal_text='',
+            execution_text=exercise.description,
+            reps_text='',
+            notes_text='',
+        )
+        messages.success(request, f'Cwiczenie "{exercise.name}" zostalo dodane do zestawu.')
+        return redirect('template_exercise_update', pk=t_pe.pk)
+
+    return redirect('template_exercise_select', set_pk=exercise_set.pk)
+
+
+@login_required
+def template_exercise_update(request, pk):
+    t_pe = get_object_or_404(TemplatePlanExercise, pk=pk)
+    template = t_pe.exercise_set.template
+
+    if request.method == 'POST':
+        form = TemplatePlanExerciseForm(request.POST, instance=t_pe)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Cwiczenie w szablonie zostalo zaktualizowane.')
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = TemplatePlanExerciseForm(instance=t_pe)
+
+    return render(request, 'plans/template_exercise_form.html', {
+        'form': form,
+        'plan_exercise': t_pe,
+        'template': template,
+    })
+
+
+@login_required
+def template_exercise_delete(request, pk):
+    t_pe = get_object_or_404(TemplatePlanExercise, pk=pk)
+    template_pk = t_pe.exercise_set.template.pk
+    if request.method == 'POST':
+        t_pe.delete()
+        messages.success(request, 'Cwiczenie zostalo usuniete z zestawu.')
+    return redirect('template_detail', pk=template_pk)
+
+
+@login_required
+def template_exercise_move_up(request, pk):
+    t_pe = get_object_or_404(TemplatePlanExercise, pk=pk)
+    if request.method == 'POST':
+        siblings = list(t_pe.exercise_set.plan_exercises.order_by('order', 'pk'))
+        idx = siblings.index(t_pe)
+        if idx > 0:
+            prev_pe = siblings[idx - 1]
+            t_pe.order, prev_pe.order = prev_pe.order, t_pe.order
+            t_pe.save()
+            prev_pe.save()
+    return redirect('template_detail', pk=t_pe.exercise_set.template.pk)
+
+
+@login_required
+def template_exercise_move_down(request, pk):
+    t_pe = get_object_or_404(TemplatePlanExercise, pk=pk)
+    if request.method == 'POST':
+        siblings = list(t_pe.exercise_set.plan_exercises.order_by('order', 'pk'))
+        idx = siblings.index(t_pe)
+        if idx < len(siblings) - 1:
+            next_pe = siblings[idx + 1]
+            t_pe.order, next_pe.order = next_pe.order, t_pe.order
+            t_pe.save()
+            next_pe.save()
+    return redirect('template_detail', pk=t_pe.exercise_set.template.pk)

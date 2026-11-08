@@ -72,3 +72,35 @@ class PlanTemplateForm(forms.ModelForm):
         if len(name) < 3:
             raise ValidationError('Nazwa szablonu musi miec przynajmniej 3 znaki.')
         return name
+
+
+class TemplateExerciseSetForm(forms.ModelForm):
+    class Meta:
+        model = TemplateExerciseSet
+        fields = ['name', 'frequency_min', 'frequency_max', 'frequency_period']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. Zestaw 1'}),
+            'frequency_min': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'np. 3', 'min': 0}),
+            'frequency_max': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'opcjonalnie, np. 4', 'min': 0}),
+            'frequency_period': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        fmin = cleaned.get('frequency_min')
+        fmax = cleaned.get('frequency_max')
+        if fmin is not None and fmax is not None and fmax < fmin:
+            self.add_error('frequency_max', 'Wartosc "do" nie moze byc mniejsza niz "od".')
+        return cleaned
+
+
+class TemplatePlanExerciseForm(forms.ModelForm):
+    class Meta:
+        model = TemplatePlanExercise
+        fields = ['goal_text', 'execution_text', 'reps_text', 'notes_text']
+        widgets = {
+            'goal_text': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Co chcemy osiagnac tym cwiczeniem...'}),
+            'execution_text': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Jak wykonac cwiczenie...'}),
+            'reps_text': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. 6-10x, 15-60 sek'}),
+            'notes_text': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Uwagi ogolne...'}),
+        }

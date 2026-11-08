@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Wybierz cwiczenie{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-search"></i> Wybierz cwiczenie</h1>
+    <a href="{% url 'template_detail' exercise_set.template.pk %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Powrot do szablonu
+    </a>
+</div>
+<p class="text-muted">Szablon: <strong>{{ exercise_set.template.name }}</strong> | Zestaw: <strong>{{ exercise_set.name }}</strong></p>
+
+<div class="search-bar">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" class="form-control border-0" placeholder="Szukaj po nazwie lub opisie..." value="{{ search_query }}">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <select name="muscle_group" class="form-select" onchange="this.form.submit()">
+                <option value="">Grupa miesniowa: wszystkie</option>
+                {% for group in muscle_groups %}
+                    <option value="{{ group.id }}" {% if muscle_group_filter == group.id|stringformat:"s" %}selected{% endif %}>
+                        {{ group.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    {% for exercise in page_obj %}
+    <div class="col-md-4 mb-4">
+        <div class="card exercise-card">
+            <div class="card-body">
+                <h5 class="card-title">{{ exercise.name }}</h5>
+                <p class="card-text text-muted small">{{ exercise.description|truncatewords:15 }}</p>
+                <span class="badge badge-difficulty-{{ exercise.difficulty }}">{{ exercise.get_difficulty_display }}</span>
+            </div>
+            <div class="card-footer bg-white border-0 pb-3">
+                <form method="post" action="{% url 'template_exercise_add' exercise_set.pk exercise.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="bi bi-plus-lg"></i> Dodaj do zestawu
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>Nie znaleziono cwiczen spelniajacych kryteria.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-center mt-4">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">&laquo;&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
