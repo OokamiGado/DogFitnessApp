@@ -30,9 +30,15 @@
             {% if form.name.errors %}<div class="invalid-feedback-custom">{{ form.name.errors|first }}</div>{% endif %}
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Rasa (opcjonalnie)</label>
-            {{ form.breed }}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Rasa (opcjonalnie)</label>
+                {{ form.breed }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Plec (opcjonalnie)</label>
+                {{ form.sex }}
+            </div>
         </div>
 
         <div class="row">
@@ -44,6 +50,11 @@
                 <label class="form-label">Waga w kg (opcjonalnie)</label>
                 {{ form.weight_kg }}
             </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status treningowy</label>
+            {{ form.training_status }}
         </div>
 
         <div class="mb-3">

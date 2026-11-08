@@ -1,0 +1,79 @@
+import re
+from django import forms
+from django.core.exceptions import ValidationError
+from .models import Owner, Dog
+
+MAX_PHOTO_SIZE_MB = 5
+
+
+class OwnerForm(forms.ModelForm):
+    class Meta:
+        model = Owner
+        fields = ['first_name', 'last_name', 'phone', 'email', 'notes']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Imie'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nazwisko'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. 600 123 456'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'np. jan@example.com'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notatki, np. preferowany kontakt...'}),
+        }
+
+    def clean_first_name(self):
+        value = self.cleaned_data.get('first_name', '').strip()
+        if len(value) < 2:
+            raise ValidationError('Imie musi miec przynajmniej 2 znaki.')
+        return value
+
+    def clean_last_name(self):
+        value = self.cleaned_data.get('last_name', '').strip()
+        if len(value) < 2:
+            raise ValidationError('Nazwisko musi miec przynajmniej 2 znaki.')
+        return value
+
+    def is_phone_suspicious(self):
+        """NIEBLOKUJACA walidacja telefonu - zwraca True jesli numer wyglada
+        podejrzanie (zla liczba cyfr). Uzywane w widoku do wyswietlenia
+        ostrzezenia (messages.warning), formularz NIE jest blokowany."""
+        phone = self.cleaned_data.get('phone', '')
+        digits_only = re.sub(r'\D', '', phone or '')
+        return len(digits_only) not in (9, 11, 12)
+
+
+class DogForm(forms.ModelForm):
+    class Meta:
+        model = Dog
+        fields = ['owner', 'name', 'breed', 'birth_date', 'weight_kg', 'health_notes', 'trainer_notes', 'photo']
+        widgets = {
+            'owner': forms.Select(attrs={'class': 'form-select'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Imie psa'}),
+            'breed': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. Border Collie'}),
+            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'weight_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'np. 22.5'}),
+            'health_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Kontuzje, przeciwwskazania...'}),
+            'trainer_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Prywatne notatki trenera...'}),
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, fixed_owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['owner'].queryset = Owner.objects.filter(is_active=True)
+        if fixed_owner is not None:
+            self.fields['owner'].initial = fixed_owner.pk
+            self.fields['owner'].widget = forms.HiddenInput()
+            self.fields['owner'].required = False  # nadpisywane w widoku (fixed_owner)
+
+    def clean_name(self):
+        value = self.cleaned_data.get('name', '').strip()
+        if len(value) < 2:
+            raise ValidationError('Imie psa musi miec przynajmniej 2 znaki.')
+        return value
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get('photo')
+        if photo and hasattr(photo, 'size'):
+            if photo.size > MAX_PHOTO_SIZE_MB * 1024 * 1024:
+                raise ValidationError(f'Zdjecie jest za duze (max {MAX_PHOTO_SIZE_MB}MB).')
+            content_type = getattr(photo, 'content_type', None)
+            if content_type and not content_type.startswith('image/'):
+                raise ValidationError('Plik musi byc obrazem.')
+        return photo

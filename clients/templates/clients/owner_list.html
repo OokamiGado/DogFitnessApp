@@ -5,6 +5,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1><i class="bi bi-people" style="color: #D4AF37;"></i> Klienci</h1>
     <div>
+        <a href="{% url 'owner_export_csv' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-download"></i> Eksport CSV
+        </a>
         <a href="{% url 'owner_archived_list' %}" class="btn btn-outline-secondary me-2">
             <i class="bi bi-archive"></i> Archiwum
         </a>
@@ -54,10 +57,19 @@
     <div class="col-md-4 mb-4">
         <div class="card exercise-card">
             <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-person-circle"></i> {{ owner.full_name }}</h5>
-                <p class="card-text text-muted small mb-1"><i class="bi bi-telephone"></i> {{ owner.phone }}</p>
+                <h5 class="card-title">
+                    <i class="bi bi-person-circle"></i> {{ owner.full_name }}
+                    {% if not owner.rodo_consent %}
+                        <i class="bi bi-exclamation-triangle-fill text-warning" title="Brak zgody RODO" style="font-size: 0.8rem;"></i>
+                    {% endif %}
+                </h5>
+                <p class="card-text text-muted small mb-1">
+                    <i class="bi bi-telephone"></i> <a href="tel:{{ owner.phone }}">{{ owner.phone }}</a>
+                </p>
                 {% if owner.email %}
-                <p class="card-text text-muted small mb-1"><i class="bi bi-envelope"></i> {{ owner.email }}</p>
+                <p class="card-text text-muted small mb-1">
+                    <i class="bi bi-envelope"></i> <a href="mailto:{{ owner.email }}">{{ owner.email }}</a>
+                </p>
                 {% endif %}
                 <div class="mb-2">
                     {% for dog in owner.dogs.all %}

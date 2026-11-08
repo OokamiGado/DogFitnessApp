@@ -1,8 +1,10 @@
+import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.http import HttpResponse
 from .models import Owner, Dog
 from .forms import OwnerForm, DogForm
 
@@ -129,6 +131,29 @@ def owner_delete_permanent(request, pk):
     return redirect('owner_archived_list')
 
 
+@login_required
+def owner_export_csv(request):
+    """Eksport aktywnych klientow do CSV (np. do uzycia offline na telefonie)."""
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = 'attachment; filename="klienci.csv"'
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow([
+        'Imie', 'Nazwisko', 'Telefon', 'Email', 'Kontakt zastepczy', 'Telefon zastepczy',
+        'Zgoda RODO', 'Zgoda na zdjecia', 'Psy', 'Notatki',
+    ])
+    owners = Owner.objects.filter(is_active=True).prefetch_related('dogs')
+    for owner in owners:
+        dog_names = ', '.join(d.name for d in owner.dogs.filter(is_active=True))
+        writer.writerow([
+            owner.first_name, owner.last_name, owner.phone, owner.email,
+            owner.secondary_contact_name, owner.secondary_contact_phone,
+            'Tak' if owner.rodo_consent else 'Nie',
+            'Tak' if owner.photo_consent else 'Nie',
+            dog_names, owner.notes,
+        ])
+    return response
+
+
 # ============ DOG ============
 
 @login_required
@@ -238,3 +263,39 @@ def dog_delete_permanent(request, pk):
         dog.delete()
         messages.success(request, 'Pies zostal usuniety na zawsze.')
     return redirect('dog_archived_list')
+
+
+@login_required
+def dog_toggle_training_status(request, pk):
+    """Szybkie przelaczenie statusu Aktywny <-> Wstrzymany (bez archiwizacji)."""
+    dog = get_object_or_404(Dog, pk=pk)
+    if request.method == 'POST':
+        if dog.training_status == Dog.STATUS_ACTIVE:
+            dog.training_status = Dog.STATUS_PAUSED
+            messages.success(request, f'Trening {dog.name} zostal wstrzymany.')
+        else:
+            dog.training_status = Dog.STATUS_ACTIVE
+            messages.success(request, f'Trening {dog.name} zostal przywrocony (aktywny).')
+        dog.save()
+    return redirect(request.META.get('HTTP_REFERER', 'dog_list'))
+
+
+@login_required
+def dog_export_csv(request):
+    """Eksport aktywnych psow do CSV."""
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = 'attachment; filename="psy.csv"'
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow([
+        'Imie psa', 'Rasa', 'Plec', 'Wiek', 'Waga (kg)', 'Status treningowy',
+        'Wlasciciel', 'Telefon wlasciciela', 'Informacje zdrowotne',
+    ])
+    dogs = Dog.objects.filter(is_active=True).select_related('owner')
+    for dog in dogs:
+        writer.writerow([
+            dog.name, dog.breed, dog.get_sex_display() if dog.sex else '',
+            dog.get_age_display() or '', dog.weight_kg or '',
+            dog.get_training_status_display(),
+            dog.owner.full_name, dog.owner.phone, dog.health_notes,
+        ])
+    return response

@@ -17,14 +17,42 @@
     </div>
 </div>
 
+{% if not owner.rodo_consent %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill"></i> Brak zgody RODO od tego klienta.
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-md-5">
         <div class="detail-section mb-4">
             <h5><i class="bi bi-card-text"></i> Dane kontaktowe</h5>
-            <p class="mb-1"><i class="bi bi-telephone"></i> <strong>{{ owner.phone }}</strong></p>
+            <p class="mb-1"><i class="bi bi-telephone"></i> <a href="tel:{{ owner.phone }}"><strong>{{ owner.phone }}</strong></a></p>
             {% if owner.email %}
-                <p class="mb-1"><i class="bi bi-envelope"></i> {{ owner.email }}</p>
+                <p class="mb-1"><i class="bi bi-envelope"></i> <a href="mailto:{{ owner.email }}">{{ owner.email }}</a></p>
             {% endif %}
+
+            {% if owner.secondary_contact_name or owner.secondary_contact_phone %}
+                <hr>
+                <h6><i class="bi bi-person-plus"></i> Kontakt zastepczy</h6>
+                {% if owner.secondary_contact_name %}<p class="mb-1">{{ owner.secondary_contact_name }}</p>{% endif %}
+                {% if owner.secondary_contact_phone %}<p class="mb-1"><a href="tel:{{ owner.secondary_contact_phone }}">{{ owner.secondary_contact_phone }}</a></p>{% endif %}
+            {% endif %}
+
+            <hr>
+            <p class="mb-1 small">
+                <i class="bi bi-shield-check"></i> Zgoda RODO:
+                {% if owner.rodo_consent %}
+                    <span class="text-success">Tak</span> ({{ owner.rodo_consent_date|date:"d.m.Y" }})
+                {% else %}
+                    <span class="text-danger">Nie</span>
+                {% endif %}
+            </p>
+            <p class="mb-1 small">
+                <i class="bi bi-camera"></i> Zgoda na zdjecia:
+                {% if owner.photo_consent %}<span class="text-success">Tak</span>{% else %}<span class="text-danger">Nie</span>{% endif %}
+            </p>
+
             {% if owner.notes %}
                 <hr>
                 <h6>Notatki</h6>
@@ -51,8 +79,13 @@
                             <div class="card-img-placeholder" style="height:150px;"><i class="bi bi-image"></i></div>
                         {% endif %}
                         <div class="card-body">
-                            <h6 class="card-title mb-1">{{ dog.name }}</h6>
-                            {% if dog.breed %}<p class="text-muted small mb-1">{{ dog.breed }}</p>{% endif %}
+                            <h6 class="card-title mb-1">
+                                {{ dog.name }}
+                                {% if dog.training_status == 'paused' %}
+                                    <span class="badge bg-warning text-dark">Wstrzymany</span>
+                                {% endif %}
+                            </h6>
+                            {% if dog.breed %}<p class="text-muted small mb-1">{{ dog.breed }}{% if dog.get_sex_display %} - {{ dog.get_sex_display }}{% endif %}</p>{% endif %}
                             {% if dog.get_age_display %}<p class="text-muted small mb-0"><i class="bi bi-cake2"></i> {{ dog.get_age_display }}</p>{% endif %}
                         </div>
                         <div class="card-footer bg-white border-0 pb-2">

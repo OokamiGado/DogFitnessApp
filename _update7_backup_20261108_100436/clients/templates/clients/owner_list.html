@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}Klienci{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-people" style="color: #D4AF37;"></i> Klienci</h1>
+    <div>
+        <a href="{% url 'owner_archived_list' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-archive"></i> Archiwum
+        </a>
+        <a href="{% url 'dog_list' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-list-ul"></i> Wszystkie psy
+        </a>
+        <a href="{% url 'owner_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Dodaj klienta
+        </a>
+    </div>
+</div>
+
+<div class="stats-panel mb-4">
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.owners_count }}</span>
+        <span class="stat-label">Aktywnych wlascicieli</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.dogs_count }}</span>
+        <span class="stat-label">Aktywnych psow</span>
+    </div>
+</div>
+
+<div class="search-bar">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-10">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" class="form-control border-0" placeholder="Szukaj po imieniu, nazwisku, telefonie, emailu lub imieniu psa..." value="{{ search_query }}">
+            </div>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Szukaj</button>
+        </div>
+    </form>
+    {% if search_query %}
+        <div class="mt-2">
+            <a href="{% url 'owner_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Wyczysc
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% for owner in page_obj %}
+    <div class="col-md-4 mb-4">
+        <div class="card exercise-card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-person-circle"></i> {{ owner.full_name }}</h5>
+                <p class="card-text text-muted small mb-1"><i class="bi bi-telephone"></i> {{ owner.phone }}</p>
+                {% if owner.email %}
+                <p class="card-text text-muted small mb-1"><i class="bi bi-envelope"></i> {{ owner.email }}</p>
+                {% endif %}
+                <div class="mb-2">
+                    {% for dog in owner.dogs.all %}
+                        {% if dog.is_active %}
+                        <span class="badge badge-muscle"><i class="bi bi-suit-heart-fill"></i> {{ dog.name }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0 pb-3">
+                <a href="{% url 'owner_detail' owner.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye"></i> Szczegoly
+                </a>
+                <a href="{% url 'owner_update' owner.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'owner_delete' owner.pk %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-archive"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p class="mb-3">
+                {% if search_query %}
+                    Nie znaleziono klientow spelniajacych kryteria.
+                {% else %}
+                    Brak klientow w bazie. Dodaj pierwszego!
+                {% endif %}
+            </p>
+            <a href="{% url 'owner_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Dodaj klienta
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-center mt-4">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">&laquo;&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -10,6 +10,23 @@ class Owner(models.Model):
     notes = models.TextField(blank=True, verbose_name="Notatki")
     is_active = models.BooleanField(default=True, verbose_name="Aktywny")
 
+    secondary_contact_name = models.CharField(
+        max_length=100, blank=True, verbose_name="Kontakt zastepczy - imie i nazwisko"
+    )
+    secondary_contact_phone = models.CharField(
+        max_length=30, blank=True, verbose_name="Kontakt zastepczy - telefon"
+    )
+
+    rodo_consent = models.BooleanField(
+        default=False, verbose_name="Zgoda na przetwarzanie danych osobowych (RODO)"
+    )
+    rodo_consent_date = models.DateField(
+        null=True, blank=True, verbose_name="Data udzielenia zgody RODO"
+    )
+    photo_consent = models.BooleanField(
+        default=False, verbose_name="Zgoda na wykorzystanie zdjec psa (np. social media)"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -28,13 +45,35 @@ class Owner(models.Model):
     def active_dogs(self):
         return self.dogs.filter(is_active=True)
 
+    def save(self, *args, **kwargs):
+        if self.rodo_consent and not self.rodo_consent_date:
+            self.rodo_consent_date = date.today()
+        if not self.rodo_consent:
+            self.rodo_consent_date = None
+        super().save(*args, **kwargs)
+
 
 class Dog(models.Model):
+    SEX_MALE = 'M'
+    SEX_FEMALE = 'F'
+    SEX_CHOICES = [
+        (SEX_MALE, 'Pies (samiec)'),
+        (SEX_FEMALE, 'Suczka (samica)'),
+    ]
+
+    STATUS_ACTIVE = 'active'
+    STATUS_PAUSED = 'paused'
+    TRAINING_STATUS_CHOICES = [
+        (STATUS_ACTIVE, 'Aktywny'),
+        (STATUS_PAUSED, 'Wstrzymany (tymczasowo)'),
+    ]
+
     owner = models.ForeignKey(
         Owner, related_name='dogs', on_delete=models.CASCADE, verbose_name="Wlasciciel"
     )
     name = models.CharField(max_length=100, verbose_name="Imie psa")
     breed = models.CharField(max_length=100, blank=True, verbose_name="Rasa")
+    sex = models.CharField(max_length=1, choices=SEX_CHOICES, blank=True, verbose_name="Plec")
     birth_date = models.DateField(null=True, blank=True, verbose_name="Data urodzenia")
     weight_kg = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Waga (kg)"
@@ -42,7 +81,12 @@ class Dog(models.Model):
     health_notes = models.TextField(blank=True, verbose_name="Informacje zdrowotne / przeciwwskazania")
     trainer_notes = models.TextField(blank=True, verbose_name="Notatki trenera")
     photo = models.ImageField(upload_to='dogs/', blank=True, null=True, verbose_name="Zdjecie")
-    is_active = models.BooleanField(default=True, verbose_name="Aktywny")
+
+    training_status = models.CharField(
+        max_length=10, choices=TRAINING_STATUS_CHOICES, default=STATUS_ACTIVE,
+        verbose_name="Status treningowy"
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Aktywny (archiwizacja)")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -58,8 +102,6 @@ class Dog(models.Model):
         return self.name
 
     def get_age_display(self):
-        """Zwraca czytelny, polski opis wieku psa na podstawie birth_date,
-        np. '3 lata', '1 rok', '7 miesiecy'. Zwraca None jesli brak daty."""
         if not self.birth_date:
             return None
         today = date.today()
@@ -97,7 +139,6 @@ class Dog(models.Model):
         self._resize_photo_if_needed()
 
     def _resize_photo_if_needed(self):
-        """Automatyczna kompresja zdjecia psa (analogicznie do zdjec cwiczen)."""
         try:
             from PIL import Image as PILImage
             if not self.photo or not self.photo.name:

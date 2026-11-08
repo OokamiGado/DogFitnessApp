@@ -3,8 +3,24 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-suit-heart-fill"></i> {{ dog.name }}</h1>
+    <h1><i class="bi bi-suit-heart-fill"></i> {{ dog.name }}
+        {% if dog.training_status == 'paused' %}
+            <span class="badge bg-warning text-dark">Trening wstrzymany</span>
+        {% endif %}
+    </h1>
     <div>
+        <form method="post" action="{% url 'dog_toggle_training_status' dog.pk %}" style="display:inline;">
+            {% csrf_token %}
+            {% if dog.training_status == 'paused' %}
+                <button type="submit" class="btn btn-outline-success">
+                    <i class="bi bi-play-circle"></i> Przywroc trening
+                </button>
+            {% else %}
+                <button type="submit" class="btn btn-outline-warning">
+                    <i class="bi bi-pause-circle"></i> Wstrzymaj trening
+                </button>
+            {% endif %}
+        </form>
         <a href="{% url 'dog_update' dog.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil"></i> Edytuj
         </a>
@@ -27,8 +43,11 @@
     </div>
     <div class="col-md-8">
         <div class="detail-section">
-            <p><i class="bi bi-person"></i> Wlasciciel: <a href="{% url 'owner_detail' dog.owner.pk %}">{{ dog.owner.full_name }}</a></p>
+            <p><i class="bi bi-person"></i> Wlasciciel: <a href="{% url 'owner_detail' dog.owner.pk %}">{{ dog.owner.full_name }}</a>
+                (<a href="tel:{{ dog.owner.phone }}">{{ dog.owner.phone }}</a>)
+            </p>
             {% if dog.breed %}<p><i class="bi bi-tag"></i> Rasa: {{ dog.breed }}</p>{% endif %}
+            {% if dog.get_sex_display %}<p><i class="bi bi-gender-ambiguous"></i> Plec: {{ dog.get_sex_display }}</p>{% endif %}
             {% if dog.get_age_display %}<p><i class="bi bi-cake2"></i> Wiek: {{ dog.get_age_display }}</p>{% endif %}
             {% if dog.weight_kg %}<p><i class="bi bi-speedometer2"></i> Waga: {{ dog.weight_kg }} kg</p>{% endif %}
 

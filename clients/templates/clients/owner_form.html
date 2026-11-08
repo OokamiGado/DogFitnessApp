@@ -42,6 +42,37 @@
             {{ form.notes }}
         </div>
 
+        <hr>
+        <h6 class="mb-3"><i class="bi bi-person-plus"></i> Kontakt zastepczy (opcjonalnie)</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Imie i nazwisko</label>
+                {{ form.secondary_contact_name }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Telefon</label>
+                {{ form.secondary_contact_phone }}
+            </div>
+        </div>
+
+        <hr>
+        <h6 class="mb-3"><i class="bi bi-shield-check"></i> RODO</h6>
+        <div class="form-check mb-2">
+            {{ form.rodo_consent }}
+            <label class="form-check-label" for="{{ form.rodo_consent.id_for_label }}">
+                Zgoda na przetwarzanie danych osobowych (RODO)
+            </label>
+        </div>
+        <div class="form-check mb-3">
+            {{ form.photo_consent }}
+            <label class="form-check-label" for="{{ form.photo_consent.id_for_label }}">
+                Zgoda na wykorzystanie zdjec psa (np. social media)
+            </label>
+        </div>
+        {% if owner and owner.rodo_consent_date %}
+            <p class="text-muted small">Zgoda RODO udzielona: {{ owner.rodo_consent_date|date:"d.m.Y" }}</p>
+        {% endif %}
+
         <div class="mt-4">
             <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
             <a href="{% url 'owner_list' %}" class="btn btn-secondary">Anuluj</a>

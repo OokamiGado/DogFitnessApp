@@ -5,6 +5,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1><i class="bi bi-suit-heart-fill" style="color: #D4AF37;"></i> Psy</h1>
     <div>
+        <a href="{% url 'dog_export_csv' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-download"></i> Eksport CSV
+        </a>
         <a href="{% url 'dog_archived_list' %}" class="btn btn-outline-secondary me-2">
             <i class="bi bi-archive"></i> Archiwum
         </a>
@@ -45,8 +48,13 @@
                 <div class="card-img-placeholder"><i class="bi bi-image"></i></div>
             {% endif %}
             <div class="card-body">
-                <h5 class="card-title">{{ dog.name }}</h5>
-                {% if dog.breed %}<p class="text-muted small mb-1">{{ dog.breed }}</p>{% endif %}
+                <h5 class="card-title">
+                    {{ dog.name }}
+                    {% if dog.training_status == 'paused' %}
+                        <span class="badge bg-warning text-dark">Wstrzymany</span>
+                    {% endif %}
+                </h5>
+                {% if dog.breed %}<p class="text-muted small mb-1">{{ dog.breed }}{% if dog.get_sex_display %} - {{ dog.get_sex_display }}{% endif %}</p>{% endif %}
                 {% if dog.get_age_display %}<p class="text-muted small mb-1"><i class="bi bi-cake2"></i> {{ dog.get_age_display }}</p>{% endif %}
                 <p class="small mb-0"><i class="bi bi-person"></i> <a href="{% url 'owner_detail' dog.owner.pk %}">{{ dog.owner.full_name }}</a></p>
             </div>

@@ -9,13 +9,21 @@ MAX_PHOTO_SIZE_MB = 5
 class OwnerForm(forms.ModelForm):
     class Meta:
         model = Owner
-        fields = ['first_name', 'last_name', 'phone', 'email', 'notes']
+        fields = [
+            'first_name', 'last_name', 'phone', 'email', 'notes',
+            'secondary_contact_name', 'secondary_contact_phone',
+            'rodo_consent', 'photo_consent',
+        ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Imie'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nazwisko'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. 600 123 456'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'np. jan@example.com'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notatki, np. preferowany kontakt...'}),
+            'secondary_contact_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. partner/partnerka, dziecko'}),
+            'secondary_contact_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. 600 999 888'}),
+            'rodo_consent': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'photo_consent': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def clean_first_name(self):
@@ -31,9 +39,6 @@ class OwnerForm(forms.ModelForm):
         return value
 
     def is_phone_suspicious(self):
-        """NIEBLOKUJACA walidacja telefonu - zwraca True jesli numer wyglada
-        podejrzanie (zla liczba cyfr). Uzywane w widoku do wyswietlenia
-        ostrzezenia (messages.warning), formularz NIE jest blokowany."""
         phone = self.cleaned_data.get('phone', '')
         digits_only = re.sub(r'\D', '', phone or '')
         return len(digits_only) not in (9, 11, 12)
@@ -42,16 +47,21 @@ class OwnerForm(forms.ModelForm):
 class DogForm(forms.ModelForm):
     class Meta:
         model = Dog
-        fields = ['owner', 'name', 'breed', 'birth_date', 'weight_kg', 'health_notes', 'trainer_notes', 'photo']
+        fields = [
+            'owner', 'name', 'breed', 'sex', 'birth_date', 'weight_kg',
+            'health_notes', 'trainer_notes', 'photo', 'training_status',
+        ]
         widgets = {
             'owner': forms.Select(attrs={'class': 'form-select'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Imie psa'}),
             'breed': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. Border Collie'}),
+            'sex': forms.Select(attrs={'class': 'form-select'}),
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'weight_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'np. 22.5'}),
             'health_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Kontuzje, przeciwwskazania...'}),
             'trainer_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Prywatne notatki trenera...'}),
             'photo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'training_status': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, fixed_owner=None, **kwargs):
@@ -60,7 +70,7 @@ class DogForm(forms.ModelForm):
         if fixed_owner is not None:
             self.fields['owner'].initial = fixed_owner.pk
             self.fields['owner'].widget = forms.HiddenInput()
-            self.fields['owner'].required = False  # nadpisywane w widoku (fixed_owner)
+            self.fields['owner'].required = False
 
     def clean_name(self):
         value = self.cleaned_data.get('name', '').strip()
