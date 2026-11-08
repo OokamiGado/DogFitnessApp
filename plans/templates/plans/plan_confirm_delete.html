@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Archiwizuj plan{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h1 class="mb-4"><i class="bi bi-archive text-warning"></i> Przenies do archiwum</h1>
+    <p>Czy na pewno chcesz przeniesc plan <strong>{{ plan.name }}</strong> do archiwum?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="bi bi-archive"></i> Tak, przenies do archiwum</button>
+        <a href="{% url 'plan_detail' plan.pk %}" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>
+{% endblock %}

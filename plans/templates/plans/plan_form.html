@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ title }} - {{ dog.name }}</h1>
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Nazwa planu</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="invalid-feedback-custom">{{ form.name.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            {{ form.status }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Cel treningu (ogolny dla calego planu)</label>
+            {{ form.training_goal }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Wazne zasady i bezpieczenstwo</label>
+            {{ form.safety_rules }}
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+            {% if plan %}
+                <a href="{% url 'plan_detail' plan.pk %}" class="btn btn-secondary">Anuluj</a>
+            {% else %}
+                <a href="{% url 'plan_list' dog.pk %}" class="btn btn-secondary">Anuluj</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

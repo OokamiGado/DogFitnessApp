@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Archiwum planow{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-archive"></i> Archiwum planow - {{ dog.name }}</h1>
+    <a href="{% url 'plan_list' dog.pk %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Powrot do listy
+    </a>
+</div>
+
+<div class="form-card">
+    <table class="table">
+        <thead>
+            <tr><th>Nazwa</th><th>Status</th><th>Zarchiwizowano</th><th>Akcje</th></tr>
+        </thead>
+        <tbody>
+            {% for plan in plans %}
+            <tr>
+                <td>{{ plan.name }}</td>
+                <td>{{ plan.get_status_display }}</td>
+                <td>{{ plan.updated_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    <form method="post" action="{% url 'plan_restore' plan.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Przywroc
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'plan_delete_permanent' plan.pk %}" style="display:inline;" onsubmit="return confirm('Czy na pewno chcesz usunac ten plan NA ZAWSZE?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i> Usun na zawsze
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">Archiwum jest puste.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

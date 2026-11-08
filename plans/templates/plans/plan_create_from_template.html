@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Nowy plan od szablonu{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Nowy plan od szablonu - {{ dog.name }}</h1>
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Wybierz szablon</label>
+            <select name="template" class="form-select" required>
+                <option value="">-- wybierz --</option>
+                {% for t in templates %}
+                    <option value="{{ t.pk }}">{{ t.name }} ({{ t.exercise_sets.count }} zestaw(y))</option>
+                {% endfor %}
+            </select>
+            <small class="text-muted">
+                Struktura szablonu (zestawy i cwiczenia) zostanie skopiowana do nowego planu.
+                Mozesz ja potem swobodnie modyfikowac - zmiany NIE wplyna na szablon.
+            </small>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Utworz plan</button>
+            <a href="{% url 'plan_list' dog.pk %}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

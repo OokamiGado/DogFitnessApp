@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Edytuj cwiczenie w planie{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-pencil"></i> {{ plan_exercise.exercise.name }}</h1>
+<p class="text-muted">
+    Plan: <strong>{{ plan.name }}</strong> | Zestaw: <strong>{{ plan_exercise.exercise_set.name }}</strong>
+</p>
+
+{% if shared_tags %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <strong>Uwaga:</strong> to cwiczenie ma tagi wspolne z profilem zdrowotnym {{ plan.dog.name }}:
+    {% for tag in shared_tags %}<span class="badge bg-warning text-dark">{{ tag.name }}</span>{% endfor %}
+    Sprawdz, czy to bezpieczne.
+</div>
+{% endif %}
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Cel (dlaczego to cwiczenie u tego psa)</label>
+            {{ form.goal_text }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Wykonanie</label>
+            {{ form.execution_text }}
+            <small class="text-muted">Domyslnie skopiowane z opisu cwiczenia w katalogu - mozesz dostosowac.</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Ilosc / powtorzenia</label>
+            {{ form.reps_text }}
+            <small class="text-muted">np. "6-10x, 15-60 sek", "2-3 minuty", "10-20 przejsc" - wolny tekst, bo format bardzo zalezy od cwiczenia.</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Uwagi specyficzne dla tego psa</label>
+            {{ form.notes_text }}
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+            <a href="{% url 'plan_detail' plan.pk %}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

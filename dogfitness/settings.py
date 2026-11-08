@@ -44,7 +44,7 @@ if USE_CLOUDINARY:
     # 'cloudinary' MUSI byc po 'django.contrib.staticfiles'
     INSTALLED_APPS += ['cloudinary']
 
-INSTALLED_APPS += ['exercises', 'clients']
+INSTALLED_APPS += ['exercises', 'clients', 'plans']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

@@ -9,6 +9,9 @@
         {% endif %}
     </h1>
     <div>
+        <a href="{% url 'plan_list' dog.pk %}" class="btn btn-primary">
+            <i class="bi bi-clipboard2-pulse"></i> Plany treningowe ({{ dog.training_plans.count }})
+        </a>
         <a href="{% url 'dog_pdf' dog.pk %}" target="_blank" class="btn btn-outline-secondary">
             <i class="bi bi-file-pdf"></i> Karta PDF
         </a>

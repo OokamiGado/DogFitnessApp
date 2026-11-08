@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Usun zestaw{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h1 class="mb-4"><i class="bi bi-trash text-danger"></i> Usun zestaw</h1>
+    <p>Czy na pewno chcesz usunac zestaw <strong>{{ exercise_set.name }}</strong> wraz z {{ exercise_set.plan_exercises.count }} cwiczeniami?</p>
+    <p class="text-muted">Ta operacja jest nieodwracalna.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Tak, usun</button>
+        <a href="{% url 'plan_detail' exercise_set.plan.pk %}" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>
+{% endblock %}
