@@ -54,6 +54,15 @@
             {% if dog.get_age_display %}<p><i class="bi bi-cake2"></i> Wiek: {{ dog.get_age_display }}</p>{% endif %}
             {% if dog.weight_kg %}<p><i class="bi bi-speedometer2"></i> Waga: {{ dog.weight_kg }} kg</p>{% endif %}
 
+            {% if dog.health_tags.all %}
+                <div class="mb-2">
+                    <strong class="small text-muted"><i class="bi bi-tags"></i> Tagi zdrowotne:</strong><br>
+                    {% for tag in dog.health_tags.all %}
+                        <span class="badge bg-warning text-dark">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             {% if dog.health_notes %}
                 <div class="alert alert-warning mt-3">
                     <i class="bi bi-exclamation-triangle-fill"></i>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import MuscleGroup, Equipment, Exercise, ExerciseImage
+from .models import MuscleGroup, Equipment, Exercise, ExerciseImage, ContraindicationTag
 
 
 class ExerciseImageInline(admin.TabularInline):
@@ -21,12 +21,18 @@ class EquipmentAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
+@admin.register(ContraindicationTag)
+class ContraindicationTagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')
+    search_fields = ('name', 'description')
+
+
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
     list_display = ('name', 'variant_name', 'parent_exercise', 'difficulty', 'is_active', 'created_at')
-    list_filter = ('difficulty', 'is_active', 'muscle_groups', 'equipment')
+    list_filter = ('difficulty', 'is_active', 'muscle_groups', 'equipment', 'contraindication_tags')
     search_fields = ('name', 'description', 'variant_name')
-    filter_horizontal = ('muscle_groups', 'equipment')
+    filter_horizontal = ('muscle_groups', 'equipment', 'contraindication_tags')
     inlines = [ExerciseImageInline]
     actions = ['make_active', 'make_archived']
     list_per_page = 50

@@ -77,6 +77,15 @@
                 {% endfor %}
             </p>
 
+            {% if exercise.contraindication_tags.all %}
+                <h5><i class="bi bi-tags"></i> Tagi przeciwwskazan</h5>
+                <p>
+                    {% for tag in exercise.contraindication_tags.all %}
+                        <span class="badge bg-warning text-dark">{{ tag.name }}</span>
+                    {% endfor %}
+                </p>
+            {% endif %}
+
             {% if exercise.contraindications %}
                 <div class="alert alert-warning">
                     <i class="bi bi-exclamation-triangle-fill"></i>

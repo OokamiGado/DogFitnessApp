@@ -30,8 +30,9 @@ class OwnerAdmin(admin.ModelAdmin):
 @admin.register(Dog)
 class DogAdmin(admin.ModelAdmin):
     list_display = ('name', 'owner', 'breed', 'sex', 'training_status', 'is_active', 'created_at')
-    list_filter = ('is_active', 'training_status', 'sex', 'breed')
+    list_filter = ('is_active', 'training_status', 'sex', 'breed', 'health_tags')
     search_fields = ('name', 'breed', 'owner__first_name', 'owner__last_name')
+    filter_horizontal = ('health_tags',)
 
 
 @admin.register(AuditLog)

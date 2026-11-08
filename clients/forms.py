@@ -62,7 +62,7 @@ class DogForm(forms.ModelForm):
         model = Dog
         fields = [
             'owner', 'name', 'breed', 'sex', 'birth_date', 'weight_kg',
-            'health_notes', 'trainer_notes', 'photo', 'training_status',
+            'health_notes', 'health_tags', 'trainer_notes', 'photo', 'training_status',
         ]
         widgets = {
             'owner': forms.Select(attrs={'class': 'form-select'}),
@@ -72,6 +72,7 @@ class DogForm(forms.ModelForm):
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'weight_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'np. 22.5'}),
             'health_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Kontuzje, przeciwwskazania...'}),
+            'health_tags': forms.CheckboxSelectMultiple(),
             'trainer_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Prywatne notatki trenera...'}),
             'photo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'training_status': forms.Select(attrs={'class': 'form-select'}),
@@ -84,6 +85,7 @@ class DogForm(forms.ModelForm):
             self.fields['owner'].initial = fixed_owner.pk
             self.fields['owner'].widget = forms.HiddenInput()
             self.fields['owner'].required = False
+        self.fields['health_tags'].required = False
 
     def clean_name(self):
         value = self.cleaned_data.get('name', '').strip()

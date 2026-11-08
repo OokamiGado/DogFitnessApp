@@ -81,6 +81,11 @@ class Dog(models.Model):
         max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Waga (kg)"
     )
     health_notes = models.TextField(blank=True, verbose_name="Informacje zdrowotne / przeciwwskazania")
+    health_tags = models.ManyToManyField(
+        'exercises.ContraindicationTag', blank=True, related_name='dogs',
+        verbose_name="Tagi zdrowotne (przeciwwskazania)",
+        help_text="Uzywane do automatycznych ostrzezen przy ukladaniu planu treningowego."
+    )
     trainer_notes = models.TextField(blank=True, verbose_name="Notatki trenera")
     photo = models.ImageField(upload_to='dogs/', blank=True, null=True, verbose_name="Zdjecie")
 
@@ -135,6 +140,16 @@ class Dog(models.Model):
                 return f"{y} lata"
             else:
                 return f"{y} lat"
+
+    def get_shared_tags(self, exercise):
+        """Zwraca liste tagow wspolnych dla tego psa i podanego cwiczenia
+        (Exercise z modulu 'exercises') - uzywane do ostrzezen przy
+        dodawaniu cwiczenia do planu treningowego."""
+        dog_tag_ids = set(self.health_tags.values_list('pk', flat=True))
+        if not dog_tag_ids:
+            return []
+        exercise_tags = exercise.contraindication_tags.filter(pk__in=dog_tag_ids)
+        return list(exercise_tags)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

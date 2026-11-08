@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import MuscleGroup, Equipment, Exercise
+from .models import MuscleGroup, Equipment, Exercise, ContraindicationTag
 
 MAX_IMAGE_SIZE_MB = 5
 MAX_IMAGES_PER_EXERCISE = 5
@@ -24,13 +24,24 @@ class EquipmentForm(forms.ModelForm):
         }
 
 
+class ContraindicationTagForm(forms.ModelForm):
+    class Meta:
+        model = ContraindicationTag
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. Wysokie obciazenie stawow'}),
+            'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Opcjonalny opis tagu'}),
+        }
+
+
 class ExerciseForm(forms.ModelForm):
     class Meta:
         model = Exercise
         fields = [
             'name', 'description', 'video_url',
             'muscle_groups', 'difficulty', 'equipment',
-            'contraindications', 'parent_exercise', 'variant_name',
+            'contraindications', 'contraindication_tags',
+            'parent_exercise', 'variant_name',
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nazwa cwiczenia'}),
@@ -40,6 +51,7 @@ class ExerciseForm(forms.ModelForm):
             'difficulty': forms.Select(attrs={'class': 'form-select'}),
             'equipment': forms.CheckboxSelectMultiple(),
             'contraindications': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Np. nie dla psow z dysplazja stawow...'}),
+            'contraindication_tags': forms.CheckboxSelectMultiple(),
             'parent_exercise': forms.Select(attrs={'class': 'form-select'}),
             'variant_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'np. Zaawansowany, Z pilka, Dla szczeniaka'}),
         }
@@ -54,6 +66,7 @@ class ExerciseForm(forms.ModelForm):
         self.fields['parent_exercise'].required = False
         self.fields['parent_exercise'].empty_label = "- Samodzielne cwiczenie (nie wariant) -"
         self.fields['variant_name'].required = False
+        self.fields['contraindication_tags'].required = False
 
     def clean_name(self):
         name = self.cleaned_data.get('name', '').strip()

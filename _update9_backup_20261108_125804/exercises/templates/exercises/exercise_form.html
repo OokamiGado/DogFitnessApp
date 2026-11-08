@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ title }}</h1>
+
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Nazwa</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="invalid-feedback-custom">{{ form.name.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Opis</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="invalid-feedback-custom">{{ form.description.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Link do video (YouTube/Vimeo, opcjonalnie)</label>
+            {{ form.video_url }}
+            {% if form.video_url.errors %}<div class="invalid-feedback-custom">{{ form.video_url.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Poziom trudnosci</label>
+            {{ form.difficulty }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Grupy miesniowe</label>
+            <div class="checkbox-group">
+                {{ form.muscle_groups }}
+            </div>
+            {% if form.muscle_groups.errors %}<div class="invalid-feedback-custom">{{ form.muscle_groups.errors|first }}</div>{% endif %}
+            <small class="text-muted">Nie widzisz potrzebnej grupy? <a href="{% url 'muscle_group_create' %}" target="_blank">Dodaj nowa</a></small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Potrzebny sprzet</label>
+            <div class="checkbox-group">
+                {{ form.equipment }}
+            </div>
+            <small class="text-muted">Nie widzisz potrzebnego sprzetu? <a href="{% url 'equipment_create' %}" target="_blank">Dodaj nowy</a></small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Przeciwwskazania - opis slowny (opcjonalnie)</label>
+            {{ form.contraindications }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-tags"></i> Tagi przeciwwskazan (opcjonalnie)</label>
+            <div class="checkbox-group">
+                {{ form.contraindication_tags }}
+            </div>
+            <small class="text-muted">
+                Uzywane do automatycznych ostrzezen - jesli pies ma przypisany ten sam tag zdrowotny,
+                trener zobaczy ostrzezenie przy tym cwiczeniu.
+            </small>
+        </div>
+
+        <hr class="my-4">
+
+        <h5 class="mb-3"><i class="bi bi-diagram-2"></i> Warianty</h5>
+
+        <div class="mb-3">
+            <label class="form-label">To cwiczenie jest wariantem innego cwiczenia</label>
+            {{ form.parent_exercise }}
+            <small class="text-muted">Wybierz, jesli to np. trudniejsza/latwiejsza wersja istniejacego cwiczenia</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Nazwa wariantu (wymagana, jesli wybrano powyzej)</label>
+            {{ form.variant_name }}
+            {% if form.variant_name.errors %}<div class="invalid-feedback-custom">{{ form.variant_name.errors|first }}</div>{% endif %}
+        </div>
+
+        <hr class="my-4">
+
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-images"></i> Dodaj zdjecia</label>
+            {{ image_form.images }}
+            {% if image_form.images.errors %}<div class="invalid-feedback-custom">{{ image_form.images.errors|first }}</div>{% endif %}
+            <small class="text-muted">
+                Limit: <strong>{{ existing_images_count }} / 5</strong> zdjec dla tego wariantu.
+                Max 5MB na plik. Duze zdjecia zostana automatycznie zmniejszone.
+            </small>
+        </div>
+
+        {% if exercise and exercise.images.all %}
+            <div class="mb-3">
+                <label class="form-label">
+                    Istniejace zdjecia - przeciagnij aby zmienic kolejnosc, wybierz okladke <i class="bi bi-star-fill" style="color:#D4AF37;"></i>
+                </label>
+                <div class="row" id="existing-images-sortable" data-reorder-url="{% url 'exercise_image_reorder' exercise.pk %}">
+                    {% for img in exercise.images.all %}
+                    <div class="col-3 mb-2 text-center sortable-image-item" data-id="{{ img.pk }}">
+                        <div class="cover-select-wrapper">
+                            <img src="{{ img.image.url }}" class="img-fluid rounded mb-1" style="aspect-ratio: 1; object-fit: cover;" alt="Zdjecie">
+                            <label class="cover-radio-label">
+                                <input type="radio" name="cover_image" value="{{ img.pk }}" {% if img.is_cover %}checked{% endif %}>
+                                Okladka
+                            </label>
+                        </div>
+                        <span class="drag-handle-hint"><i class="bi bi-arrows-move"></i> przeciagnij</span>
+                        <form method="post" action="{% url 'exercise_image_delete' img.pk %}" class="image-delete-form mt-1">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+            <a href="{% url 'exercise_list' %}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

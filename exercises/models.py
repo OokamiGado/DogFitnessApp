@@ -26,6 +26,22 @@ class Equipment(models.Model):
         return self.name
 
 
+class ContraindicationTag(models.Model):
+    """Slownik tagow przeciwwskazan - wspolny dla Exercise (co moze byc
+    ryzykowne w cwiczeniu) i Dog (jakie obszary zdrowotne wymagaja uwagi
+    u konkretnego psa). Przeciecie tagow = automatyczne ostrzezenie."""
+    name = models.CharField(max_length=100, unique=True, verbose_name="Nazwa tagu")
+    description = models.CharField(max_length=255, blank=True, verbose_name="Opis (opcjonalnie)")
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Tag przeciwwskazania"
+        verbose_name_plural = "Tagi przeciwwskazan"
+
+    def __str__(self):
+        return self.name
+
+
 class Exercise(models.Model):
     DIFFICULTY_CHOICES = [
         ('easy', 'Latwy'),
@@ -40,6 +56,11 @@ class Exercise(models.Model):
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, verbose_name="Poziom trudnosci")
     equipment = models.ManyToManyField(Equipment, blank=True, related_name='exercises', verbose_name="Potrzebny sprzet")
     contraindications = models.TextField(blank=True, verbose_name="Przeciwwskazania")
+    contraindication_tags = models.ManyToManyField(
+        ContraindicationTag, blank=True, related_name='exercises',
+        verbose_name="Tagi przeciwwskazan",
+        help_text="Uzywane do automatycznych ostrzezen przy ukladaniu planu dla psa z podobnymi tagami zdrowotnymi."
+    )
 
     parent_exercise = models.ForeignKey(
         'self', null=True, blank=True,

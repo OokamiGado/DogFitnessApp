@@ -53,8 +53,19 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Przeciwwskazania (opcjonalnie)</label>
+            <label class="form-label">Przeciwwskazania - opis slowny (opcjonalnie)</label>
             {{ form.contraindications }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="bi bi-tags"></i> Tagi przeciwwskazan (opcjonalnie)</label>
+            <div class="checkbox-group">
+                {{ form.contraindication_tags }}
+            </div>
+            <small class="text-muted">
+                Uzywane do automatycznych ostrzezen - jesli pies ma przypisany ten sam tag zdrowotny,
+                trener zobaczy ostrzezenie przy tym cwiczeniu.
+            </small>
         </div>
 
         <hr class="my-4">

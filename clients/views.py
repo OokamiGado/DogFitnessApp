@@ -245,6 +245,7 @@ def dog_create(request, owner_pk=None):
             if fixed_owner:
                 dog.owner = fixed_owner
             dog.save()
+            form.save_m2m()
             log_action(request, AuditLog.ACTION_CREATED, AuditLog.TARGET_DOG, dog,
                        f'Dodano psa {dog.name} (wlasciciel: {dog.owner.full_name})')
             messages.success(request, f'Pies {dog.name} zostal dodany.')
