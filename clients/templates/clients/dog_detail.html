@@ -9,6 +9,9 @@
         {% endif %}
     </h1>
     <div>
+        <a href="{% url 'dog_pdf' dog.pk %}" target="_blank" class="btn btn-outline-secondary">
+            <i class="bi bi-file-pdf"></i> Karta PDF
+        </a>
         <form method="post" action="{% url 'dog_toggle_training_status' dog.pk %}" style="display:inline;">
             {% csrf_token %}
             {% if dog.training_status == 'paused' %}

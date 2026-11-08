@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Dziennik zmian{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-journal-text"></i> Dziennik zmian</h1>
+    <a href="{% url 'owner_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Powrot
+    </a>
+</div>
+
+<div class="search-bar">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <select name="target" class="form-select">
+                <option value="">Typ obiektu: wszystkie</option>
+                {% for value, label in target_choices %}
+                    <option value="{{ value }}" {% if target_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select name="action" class="form-select">
+                <option value="">Akcja: wszystkie</option>
+                {% for value, label in action_choices %}
+                    <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filtruj</button>
+        </div>
+    </form>
+    {% if target_filter or action_filter %}
+        <div class="mt-2">
+            <a href="{% url 'audit_log_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Wyczysc filtry
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Data i czas</th>
+                <th>Uzytkownik</th>
+                <th>Akcja</th>
+                <th>Typ</th>
+                <th>Obiekt</th>
+                <th>Opis</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in page_obj %}
+            <tr>
+                <td class="small">{{ log.timestamp|date:"d.m.Y H:i" }}</td>
+                <td class="small">{{ log.user.username|default:"-" }}</td>
+                <td><span class="badge badge-muscle">{{ log.get_action_display }}</span></td>
+                <td class="small">{{ log.get_target_type_display }}</td>
+                <td class="small">{{ log.target_repr }}</td>
+                <td class="small text-muted">{{ log.description }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">Brak wpisow w dzienniku zmian.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-center mt-4">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">&laquo;&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

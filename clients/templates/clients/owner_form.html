@@ -28,13 +28,18 @@
             <label class="form-label">Telefon</label>
             {{ form.phone }}
             {% if form.phone.errors %}<div class="invalid-feedback-custom">{{ form.phone.errors|first }}</div>{% endif %}
-            <small class="text-muted">Format dowolny - system tylko ostrzeze, jesli numer wyglada niepoprawnie.</small>
+            <small class="text-muted">Format dowolny - system tylko ostrzeze, jesli numer wyglada niepoprawnie lub juz istnieje.</small>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Email (opcjonalnie)</label>
             {{ form.email }}
             {% if form.email.errors %}<div class="invalid-feedback-custom">{{ form.email.errors|first }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Adres (opcjonalnie)</label>
+            {{ form.address }}
         </div>
 
         <div class="mb-3">

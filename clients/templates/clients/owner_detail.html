@@ -31,6 +31,9 @@
             {% if owner.email %}
                 <p class="mb-1"><i class="bi bi-envelope"></i> <a href="mailto:{{ owner.email }}">{{ owner.email }}</a></p>
             {% endif %}
+            {% if owner.address %}
+                <p class="mb-1"><i class="bi bi-geo-alt"></i> {{ owner.address }}</p>
+            {% endif %}
 
             {% if owner.secondary_contact_name or owner.secondary_contact_phone %}
                 <hr>

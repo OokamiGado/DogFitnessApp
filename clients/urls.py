@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Wlasciciele
     path('clients/', views.owner_list, name='owner_list'),
     path('clients/add/', views.owner_create, name='owner_create'),
     path('clients/export/', views.owner_export_csv, name='owner_export_csv'),
@@ -14,7 +13,6 @@ urlpatterns = [
     path('clients/<int:pk>/delete-permanent/', views.owner_delete_permanent, name='owner_delete_permanent'),
     path('clients/<int:owner_pk>/dogs/add/', views.dog_create, name='dog_create_for_owner'),
 
-    # Psy
     path('dogs/', views.dog_list, name='dog_list'),
     path('dogs/add/', views.dog_create, name='dog_create'),
     path('dogs/export/', views.dog_export_csv, name='dog_export_csv'),
@@ -25,4 +23,7 @@ urlpatterns = [
     path('dogs/<int:pk>/restore/', views.dog_restore, name='dog_restore'),
     path('dogs/<int:pk>/delete-permanent/', views.dog_delete_permanent, name='dog_delete_permanent'),
     path('dogs/<int:pk>/toggle-status/', views.dog_toggle_training_status, name='dog_toggle_training_status'),
+    path('dogs/<int:pk>/pdf/', views.dog_pdf, name='dog_pdf'),
+
+    path('audit-log/', views.audit_log_list, name='audit_log_list'),
 ]

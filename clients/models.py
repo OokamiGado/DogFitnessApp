@@ -1,4 +1,5 @@
 from datetime import date
+from django.conf import settings
 from django.db import models
 
 
@@ -7,6 +8,7 @@ class Owner(models.Model):
     last_name = models.CharField(max_length=100, verbose_name="Nazwisko")
     phone = models.CharField(max_length=30, verbose_name="Telefon")
     email = models.EmailField(blank=True, verbose_name="Email")
+    address = models.CharField(max_length=255, blank=True, verbose_name="Adres")
     notes = models.TextField(blank=True, verbose_name="Notatki")
     is_active = models.BooleanField(default=True, verbose_name="Aktywny")
 
@@ -158,3 +160,49 @@ class Dog(models.Model):
                 img.save(path, format=fmt, **save_kwargs)
         except Exception:
             pass
+
+
+class AuditLog(models.Model):
+    """Dziennik zmian (audit log) dla modulu Klienci - zapisuje KTO i KIEDY
+    wykonal jaka akcje na kliencie lub psie."""
+
+    ACTION_CREATED = 'created'
+    ACTION_UPDATED = 'updated'
+    ACTION_ARCHIVED = 'archived'
+    ACTION_RESTORED = 'restored'
+    ACTION_DELETED_PERMANENT = 'deleted_permanent'
+    ACTION_STATUS_TOGGLED = 'status_toggled'
+    ACTION_CHOICES = [
+        (ACTION_CREATED, 'Dodano'),
+        (ACTION_UPDATED, 'Zaktualizowano'),
+        (ACTION_ARCHIVED, 'Zarchiwizowano'),
+        (ACTION_RESTORED, 'Przywrocono'),
+        (ACTION_DELETED_PERMANENT, 'Usunieto na zawsze'),
+        (ACTION_STATUS_TOGGLED, 'Zmieniono status treningowy'),
+    ]
+
+    TARGET_OWNER = 'owner'
+    TARGET_DOG = 'dog'
+    TARGET_CHOICES = [
+        (TARGET_OWNER, 'Wlasciciel'),
+        (TARGET_DOG, 'Pies'),
+    ]
+
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Data i czas")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        verbose_name="Uzytkownik"
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, verbose_name="Akcja")
+    target_type = models.CharField(max_length=10, choices=TARGET_CHOICES, verbose_name="Typ obiektu")
+    target_id = models.IntegerField(null=True, blank=True, verbose_name="ID obiektu")
+    target_repr = models.CharField(max_length=200, verbose_name="Obiekt (nazwa w momencie akcji)")
+    description = models.TextField(blank=True, verbose_name="Opis zmiany")
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "Wpis dziennika zmian"
+        verbose_name_plural = "Dziennik zmian"
+
+    def __str__(self):
+        return f"{self.get_action_display()} - {self.target_repr}"

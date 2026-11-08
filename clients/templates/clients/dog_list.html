@@ -19,20 +19,35 @@
 
 <div class="search-bar">
     <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-10">
+        <div class="col-md-6">
             <div class="input-group">
                 <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
                 <input type="text" name="q" class="form-control border-0" placeholder="Szukaj po imieniu psa, rasie lub wlascicielu..." value="{{ search_query }}">
             </div>
         </div>
         <div class="col-md-2">
+            <select name="status" class="form-select">
+                <option value="">Status: wszystkie</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Aktywny</option>
+                <option value="paused" {% if status_filter == 'paused' %}selected{% endif %}>Wstrzymany</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="breed" class="form-select">
+                <option value="">Rasa: wszystkie</option>
+                {% for breed in breed_choices %}
+                    <option value="{{ breed }}" {% if breed_filter == breed %}selected{% endif %}>{{ breed }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Szukaj</button>
         </div>
     </form>
-    {% if search_query %}
+    {% if search_query or status_filter or breed_filter %}
         <div class="mt-2">
             <a href="{% url 'dog_list' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-x-circle"></i> Wyczysc
+                <i class="bi bi-x-circle"></i> Wyczysc filtry
             </a>
         </div>
     {% endif %}
@@ -76,7 +91,7 @@
         <div class="empty-state">
             <i class="bi bi-inbox"></i>
             <p class="mb-3">
-                {% if search_query %}
+                {% if search_query or status_filter or breed_filter %}
                     Nie znaleziono psow spelniajacych kryteria.
                 {% else %}
                     Brak psow w bazie.
