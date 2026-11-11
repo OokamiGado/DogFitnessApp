@@ -1,11 +1,21 @@
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+# ALLOWED_HOSTS - domyslnie localhost (dev). Na produkcji dodaj domeny w
+# .env jako ALLOWED_HOSTS=twoja-domena.onrender.com,inna-domena.pl
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+
+# Render automatycznie ustawia RENDER_EXTERNAL_HOSTNAME dla kazdego
+# serwisu (np. 'dogfitness.onrender.com') - dodajemy ja automatycznie,
+# zeby nie trzeba było jej recznie wpisywac w zmiennych srodowiskowych.
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # ============ CLOUDINARY (opcjonalny storage zdjec w chmurze) ============
 # Domyslnie WYLACZONE (USE_CLOUDINARY=False) - zdjecia trafiaja na dysk
@@ -48,6 +58,7 @@ INSTALLED_APPS += ['exercises', 'clients', 'plans', 'scheduling', 'dashboard', '
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -95,6 +106,15 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# STATIC_ROOT - katalog, do ktorego 'collectstatic' zbiera WSZYSTKIE pliki
+# statyczne (wymagane przez Render - bez tego 'collectstatic' nie ma gdzie
+# zapisac plikow, a WhiteNoise nie ma czego serwowac na produkcji).
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+# WhiteNoise - serwuje pliki statyczne (CSS, fonty) bezposrednio z Django,
+# bez potrzeby osobnego serwera (nginx) - wystarczajace dla skali tej
+# aplikacji. CompressedManifestStaticFilesStorage dodaje hash do nazwy
+# pliku (cache busting) i kompresuje gzip/brotli przy 'collectstatic'.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -120,3 +140,37 @@ LOGOUT_REDIRECT_URL = 'login'
 # NIE dotyczy zdjec (pliki media sa na dysku serwera, np. Render, albo
 # w Cloudinary jesli USE_CLOUDINARY=True - to OSOBNE limity).
 NEON_DB_LIMIT_MB = 1024
+
+# ============ BEZPIECZENSTWO PRODUKCYJNE (Render) ============
+
+# CSRF_TRUSTED_ORIGINS - Django 4+ wymaga explicite podanych originow
+# (z protokolem https://), z ktorych akceptuje POST z CSRF tokenem.
+# Bez tego KAZDY formularz (logowanie, dodanie klienta, cokolwiek) zwroci
+# blad 403 "CSRF verification failed" na domenie produkcyjnej.
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+# Render (jak wiekszosc hostingow) terminuje HTTPS na reverse proxy i
+# przekazuje do aplikacji juz zwykle polaczenie HTTP wewnatrz swojej
+# sieci - ten naglowek mowi Django "ten request BYL po HTTPS, nie
+# przekierowuj go w kolko" (bez tego SECURE_SSL_REDIRECT=True powoduje
+# nieskonczona petle przekierowan). Bezpieczne w dev - naglowek po prostu
+# nigdy tam nie wystepuje.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Ustawienia WYMUSZAJACE HTTPS i bezpieczne ciasteczka - wlaczone TYLKO
+# gdy DEBUG=False (czyli na produkcji). Lokalnie (DEBUG=True, http://
+# localhost) te ustawienia by tylko przeszkadzaly (np. wylogowywaly przy
+# kazdym requescie, bo ciasteczko 'Secure' nie dziala bez HTTPS).
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS - mowi przegladarce "pamietaj uzywac HTTPS dla tej domeny
+    # przez N sekund, nawet jesli ktos wpisze http://". Zaczynamy od
+    # 7 dni (bezpieczny start) - mozna zwiekszyc do roku (31536000)
+    # gdy jestes pewien ze HTTPS dziala stabilnie.
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

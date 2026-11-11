@@ -7,3 +7,5 @@ sqlparse==0.6.1
 tzdata==2026.6
 reportlab==3.6.12
 python-docx==1.2.0
+gunicorn==23.0.0
+whitenoise==6.8.2

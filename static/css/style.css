@@ -53,6 +53,44 @@ h1, h2, h3, h4, h5 {
     font-weight: 500;
 }
 
+/* ============ DROPDOWN MENU W NAVBARZE (Trening / Narzedzia / User) ============ */
+.navbar-custom .dropdown-toggle::after {
+    vertical-align: 0.15em;
+}
+
+.navbar-custom .dropdown-menu {
+    background-color: var(--navy-light);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 12px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.navbar-custom .dropdown-item {
+    color: #D4C9A8;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    transition: all 0.15s;
+}
+
+.navbar-custom .dropdown-item i {
+    width: 1.2em;
+    display: inline-block;
+}
+
+.navbar-custom .dropdown-item:hover,
+.navbar-custom .dropdown-item:focus {
+    background-color: rgba(212, 175, 55, 0.18);
+    color: var(--primary);
+}
+
+.navbar-custom .dropdown-divider {
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    margin: 0.4rem 0;
+}
+
 /* ============ PRZYCISKI ============ */
 .btn-primary {
     background-color: var(--primary);

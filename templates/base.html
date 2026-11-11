@@ -26,24 +26,48 @@
                 <div class="navbar-nav ms-auto align-items-lg-center">
                     {% if user.is_authenticated %}
                         <a class="nav-link" href="{% url 'dashboard_home' %}"><i class="bi bi-house-door"></i> Panel</a>
-                        <a class="nav-link" href="{% url 'exercise_list' %}"><i class="bi bi-list-ul"></i> Cwiczenia</a>
                         <a class="nav-link" href="{% url 'owner_list' %}"><i class="bi bi-people"></i> Klienci</a>
                         <a class="nav-link" href="{% url 'session_list' %}">
                             <i class="bi bi-calendar-week"></i> Kalendarz
                             {% if pending_requests_count %}<span class="badge bg-danger">{{ pending_requests_count }}</span>{% endif %}
                         </a>
-                        <a class="nav-link" href="{% url 'template_list' %}"><i class="bi bi-file-earmark-text"></i> Szablony planow</a>
-                        <a class="nav-link" href="{% url 'muscle_group_list' %}"><i class="bi bi-diagram-3"></i> Grupy miesniowe</a>
-                        <a class="nav-link" href="{% url 'equipment_list' %}"><i class="bi bi-tools"></i> Sprzet</a>
-                        <a class="nav-link" href="{% url 'storage_usage' %}"><i class="bi bi-hdd"></i> Uzycie dysku</a>
-                        {% if user.is_staff %}
-                            <a class="nav-link" href="{% url 'payment_list' %}"><i class="bi bi-cash-coin"></i> Finanse</a>
-                            <a class="nav-link" href="{% url 'branding_list' %}"><i class="bi bi-palette"></i> Wyglad dokumentow</a>
-                            <a class="nav-link" href="{% url 'audit_log_list' %}"><i class="bi bi-journal-text"></i> Dziennik zmian</a>
-                            <a class="nav-link" href="/admin/" target="_blank"><i class="bi bi-gear"></i> Panel admina</a>
-                        {% endif %}
-                        <span class="navbar-text-custom mx-3"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
-                        <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Wyloguj</a>
+
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-clipboard2-pulse"></i> Trening
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'exercise_list' %}"><i class="bi bi-list-ul"></i> Cwiczenia</a></li>
+                                <li><a class="dropdown-item" href="{% url 'template_list' %}"><i class="bi bi-file-earmark-text"></i> Szablony planow</a></li>
+                                <li><a class="dropdown-item" href="{% url 'muscle_group_list' %}"><i class="bi bi-diagram-3"></i> Grupy miesniowe</a></li>
+                                <li><a class="dropdown-item" href="{% url 'equipment_list' %}"><i class="bi bi-tools"></i> Sprzet</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-gear"></i> Narzedzia
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'storage_usage' %}"><i class="bi bi-hdd"></i> Uzycie dysku</a></li>
+                                {% if user.is_staff %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'payment_list' %}"><i class="bi bi-cash-coin"></i> Finanse</a></li>
+                                <li><a class="dropdown-item" href="{% url 'branding_list' %}"><i class="bi bi-palette"></i> Wyglad dokumentow</a></li>
+                                <li><a class="dropdown-item" href="{% url 'audit_log_list' %}"><i class="bi bi-journal-text"></i> Dziennik zmian</a></li>
+                                <li><a class="dropdown-item" href="/admin/" target="_blank"><i class="bi bi-box-arrow-up-right"></i> Panel admina</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Wyloguj</a></li>
+                            </ul>
+                        </div>
                     {% endif %}
                 </div>
             </div>
