@@ -1,6 +1,5 @@
 import csv
 import os
-import textwrap
 from datetime import date
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -89,6 +88,9 @@ def owner_create(request):
 @login_required
 def owner_update(request, pk):
     owner = get_object_or_404(Owner, pk=pk)
+    if owner.is_anonymized:
+        messages.error(request, 'Ten klient zostal zanonimizowany - edycja danych osobowych nie jest mozliwa.')
+        return redirect('owner_archived_list')
     if request.method == 'POST':
         form = OwnerForm(request.POST, instance=owner)
         if form.is_valid():
@@ -153,6 +155,25 @@ def owner_restore(request, pk):
         log_action(request, AuditLog.ACTION_RESTORED, AuditLog.TARGET_OWNER, owner,
                    f'Przywrocono klienta {owner.full_name}')
         messages.success(request, 'Klient zostal przywrocony.')
+    return redirect('owner_archived_list')
+
+
+@login_required
+def owner_anonymize(request, pk):
+    """Anonimizuje dane osobowe klienta (RODO) - NIE usuwa psow, planow
+    treningowych, rezerwacji ani dziennika treningowego. Dostepne tylko
+    dla zarchiwizowanych klientow (is_active=False), analogicznie do
+    usuniecia na zawsze - ale bez utraty historii merytorycznej."""
+    owner = get_object_or_404(Owner, pk=pk, is_active=False)
+    if owner.is_anonymized:
+        messages.info(request, 'Ten klient jest juz zanonimizowany.')
+        return redirect('owner_archived_list')
+    if request.method == 'POST':
+        original_name = owner.full_name
+        owner.anonymize()
+        log_action(request, AuditLog.ACTION_ANONYMIZED, AuditLog.TARGET_OWNER, owner,
+                   f'Zanonimizowano dane osobowe klienta (byl: {original_name}) - psy i plany treningowe zachowane')
+        messages.success(request, 'Dane osobowe klienta zostaly zanonimizowane. Psy i plany treningowe zostaly zachowane.')
     return redirect('owner_archived_list')
 
 
@@ -286,7 +307,13 @@ def dog_update(request, pk):
 @login_required
 def dog_detail(request, pk):
     dog = get_object_or_404(Dog, pk=pk)
-    return render(request, 'clients/dog_detail.html', {'dog': dog})
+    training_history = dog.bookings.select_related('session').order_by(
+        '-session__date', '-session__start_time'
+    )[:20]
+    return render(request, 'clients/dog_detail.html', {
+        'dog': dog,
+        'training_history': training_history,
+    })
 
 
 @login_required
@@ -367,92 +394,78 @@ def dog_export_csv(request):
     return response
 
 
-_PL_MAP = {
-    'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n', 'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
-    'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N', 'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
-}
-
-
-def _pl_ascii(text):
-    if not text:
-        return text
-    return ''.join(_PL_MAP.get(ch, ch) for ch in str(text))
-
-
 @login_required
 def dog_pdf(request, pk):
     """Generuje jednostronicowa karte psa w PDF (do wydruku / zabrania na
-    trening) - zdjecie + podstawowe dane + kontakt + informacje zdrowotne."""
+    trening) - zdjecie + podstawowe dane + kontakt + informacje zdrowotne.
+
+    Uzywa wspolnego modulu dogfitness.pdf_fonts (fonty TTF DejaVu) - takie
+    same jak w plans/document_generation.py - zeby polskie znaki
+    diakrytyczne (ą, ć, ę, ł, ń, ó, ś, ź, ż) renderowaly sie poprawnie
+    (NIE transliterujemy ich juz na ASCII jak wczesniej)."""
+    from io import BytesIO
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
-    from reportlab.pdfgen import canvas as pdf_canvas
+    from reportlab.lib import colors
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
+
+    from dogfitness.pdf_fonts import get_pdf_fonts, content_disposition
 
     dog = get_object_or_404(Dog, pk=pk)
+    font_name, font_bold = get_pdf_fonts('Helvetica')
 
-    response = HttpResponse(content_type='application/pdf')
-    safe_name = _pl_ascii(dog.name).replace(' ', '_')
-    response['Content-Disposition'] = f'inline; filename="karta_{safe_name}.pdf"'
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        topMargin=18 * mm, bottomMargin=18 * mm,
+        leftMargin=18 * mm, rightMargin=18 * mm,
+    )
 
-    c = pdf_canvas.Canvas(response, pagesize=A4)
-    width, height = A4
-    margin = 20 * mm
-    y = height - margin
+    style_title = ParagraphStyle('title_pl', fontName=font_bold, fontSize=20, leading=24)
+    style_normal = ParagraphStyle('normal_pl', fontName=font_name, fontSize=12, leading=16)
+    style_section = ParagraphStyle('section_pl', fontName=font_bold, fontSize=12, leading=16, spaceBefore=6)
 
-    c.setFont("Helvetica-Bold", 20)
-    c.drawString(margin, y, f"Karta psa: {_pl_ascii(dog.name)}")
-    y -= 10 * mm
+    elements = [Paragraph(f"Karta psa: {dog.name}", style_title), Spacer(1, 6 * mm)]
 
     if dog.photo and dog.photo.name and os.path.exists(dog.photo.path):
         try:
-            img_size = 45 * mm
-            c.drawImage(
-                dog.photo.path, margin, y - img_size,
-                width=img_size, height=img_size,
-                preserveAspectRatio=True, anchor='n', mask='auto',
-            )
-            y -= img_size + 8 * mm
+            elements.append(RLImage(dog.photo.path, width=45 * mm, height=45 * mm, kind='proportional'))
+            elements.append(Spacer(1, 4 * mm))
         except Exception:
             pass
 
-    c.setFont("Helvetica", 12)
-
-    def line(label, value):
-        nonlocal y
+    def info_line(label, value):
         if value:
-            c.drawString(margin, y, f"{_pl_ascii(label)}: {_pl_ascii(value)}")
-            y -= 7 * mm
+            elements.append(Paragraph(f"<b>{label}:</b> {value}", style_normal))
 
-    line("Rasa", dog.breed)
-    line("Plec", dog.get_sex_display() if dog.sex else "")
-    line("Wiek", dog.get_age_display())
-    line("Waga", f"{dog.weight_kg} kg" if dog.weight_kg else "")
-    line("Status treningowy", dog.get_training_status_display())
+    info_line("Rasa", dog.breed)
+    info_line("Plec", dog.get_sex_display() if dog.sex else "")
+    info_line("Wiek", dog.get_age_display())
+    info_line("Waga", f"{dog.weight_kg} kg" if dog.weight_kg else "")
+    info_line("Status treningowy", dog.get_training_status_display())
 
-    y -= 3 * mm
-    line("Wlasciciel", dog.owner.full_name)
-    line("Telefon", dog.owner.phone)
+    elements.append(Spacer(1, 3 * mm))
+    info_line("Wlasciciel", dog.owner.full_name)
+    info_line("Telefon", dog.owner.phone)
     if dog.owner.secondary_contact_phone:
-        line("Kontakt zastepczy", f"{dog.owner.secondary_contact_name} - {dog.owner.secondary_contact_phone}")
+        info_line("Kontakt zastepczy", f"{dog.owner.secondary_contact_name} - {dog.owner.secondary_contact_phone}")
 
-    def paragraph(title, text):
-        nonlocal y
+    def info_paragraph(title, text):
         if not text:
             return
-        y -= 3 * mm
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin, y, _pl_ascii(title))
-        y -= 6 * mm
-        c.setFont("Helvetica", 11)
-        wrapped = textwrap.wrap(_pl_ascii(text), width=90)
-        for wrapped_line in wrapped:
-            c.drawString(margin, y, wrapped_line)
-            y -= 5.5 * mm
+        elements.append(Spacer(1, 3 * mm))
+        elements.append(Paragraph(title, style_section))
+        elements.append(Paragraph(text.replace(chr(10), '<br/>'), style_normal))
 
-    paragraph("Informacje zdrowotne:", dog.health_notes)
-    paragraph("Notatki trenera:", dog.trainer_notes)
+    info_paragraph("Informacje zdrowotne:", dog.health_notes)
+    info_paragraph("Notatki trenera:", dog.trainer_notes)
 
-    c.showPage()
-    c.save()
+    doc.build(elements)
+    buf.seek(0)
+
+    response = HttpResponse(buf.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = content_disposition('inline', f'karta_{dog.name}.pdf')
     return response
 
 

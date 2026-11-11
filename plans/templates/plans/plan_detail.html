@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load plan_extras %}
 {% block title %}{{ plan.name }}{% endblock %}
 
 {% block content %}
@@ -13,6 +14,20 @@
         </span>
     </h1>
     <div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-download"></i> Generuj dokument
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><h6 class="dropdown-header">Plan szczegolowy</h6></li>
+                <li><a class="dropdown-item" href="{% url 'plan_download_detailed_pdf' plan.pk %}" target="_blank"><i class="bi bi-file-pdf"></i> PDF</a></li>
+                <li><a class="dropdown-item" href="{% url 'plan_download_detailed_docx' plan.pk %}"><i class="bi bi-file-word"></i> DOCX</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Fiszka treningowa</h6></li>
+                <li><a class="dropdown-item" href="{% url 'plan_download_fiszka_pdf' plan.pk %}" target="_blank"><i class="bi bi-file-pdf"></i> PDF</a></li>
+                <li><a class="dropdown-item" href="{% url 'plan_download_fiszka_docx' plan.pk %}"><i class="bi bi-file-word"></i> DOCX</a></li>
+            </ul>
+        </div>
         <a href="{% url 'plan_update' plan.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil"></i> Edytuj
         </a>
@@ -98,9 +113,11 @@
             <tr>
                 <td>
                     {{ pe.exercise.name }}
-                    {% if pe.pk in conflict_pks %}
-                        <i class="bi bi-exclamation-triangle-fill text-warning" title="Mozliwy konflikt zdrowotny"></i>
-                    {% endif %}
+                    {% with shared=dog|get_shared_tags:pe.exercise %}
+                        {% if shared %}
+                            <i class="bi bi-exclamation-triangle-fill text-warning" title="Mozliwy konflikt zdrowotny"></i>
+                        {% endif %}
+                    {% endwith %}
                 </td>
                 <td class="small text-muted">{{ pe.reps_text|default:"-" }}</td>
                 <td>

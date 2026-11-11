@@ -44,7 +44,7 @@ if USE_CLOUDINARY:
     # 'cloudinary' MUSI byc po 'django.contrib.staticfiles'
     INSTALLED_APPS += ['cloudinary']
 
-INSTALLED_APPS += ['exercises', 'clients', 'plans']
+INSTALLED_APPS += ['exercises', 'clients', 'plans', 'scheduling', 'dashboard', 'finance']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -69,6 +69,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'scheduling.context_processors.pending_requests_count',
             ],
         },
     },
@@ -110,7 +111,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ============ LOGOWANIE ============
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'exercise_list'
+LOGIN_REDIRECT_URL = 'dashboard_home'
 LOGOUT_REDIRECT_URL = 'login'
 
 # ============ MONITOROWANIE MIEJSCA (Neon / storage dashboard) ============

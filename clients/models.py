@@ -29,6 +29,12 @@ class Owner(models.Model):
         default=False, verbose_name="Zgoda na wykorzystanie zdjec psa (np. social media)"
     )
 
+    is_anonymized = models.BooleanField(
+        default=False, verbose_name="Zanonimizowany",
+        help_text="Dane osobowe zostaly usuniete (RODO) - psy, plany i dziennik treningowy ZOSTAJA nietkniete."
+    )
+    anonymized_at = models.DateTimeField(null=True, blank=True, verbose_name="Data anonimizacji")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -53,6 +59,27 @@ class Owner(models.Model):
         if not self.rodo_consent:
             self.rodo_consent_date = None
         super().save(*args, **kwargs)
+
+    def anonymize(self):
+        """Usuwa dane OSOBOWE wlasciciela (RODO - 'prawo do bycia
+        zapomnianym'), ale NIE dotyka psow/planow/rezerwacji/dziennika
+        treningowego - te dane merytoryczne NIE sa danymi osobowymi
+        czlowieka i pozostaja w calosci nietkniete. Operacja
+        nieodwracalna (dane zrodlowe nie sa gdzies zachowane)."""
+        from django.utils import timezone
+        self.first_name = "Klient"
+        self.last_name = f"zanonimizowany #{self.pk}"
+        self.phone = ''
+        self.email = ''
+        self.address = ''
+        self.notes = ''
+        self.secondary_contact_name = ''
+        self.secondary_contact_phone = ''
+        self.rodo_consent = False
+        self.photo_consent = False
+        self.is_anonymized = True
+        self.anonymized_at = timezone.now()
+        self.save()
 
 
 class Dog(models.Model):
@@ -178,8 +205,12 @@ class Dog(models.Model):
 
 
 class AuditLog(models.Model):
-    """Dziennik zmian (audit log) dla modulu Klienci - zapisuje KTO i KIEDY
-    wykonal jaka akcje na kliencie lub psie."""
+    """Dziennik zmian (audit log) dla CALEJ aplikacji - zapisuje KTO i
+    KIEDY wykonal jaka akcje na kliencie, psie, planie treningowym,
+    szablonie, terminie, rezerwacji lub wnioskiem goscia. Model zyje w
+    'clients' (aplikacja najnizszego poziomu w hierarchii zaleznosci),
+    a 'plans' i 'scheduling' importuja go stad (ten sam kierunek
+    zaleznosci jak przy modelu Dog)."""
 
     ACTION_CREATED = 'created'
     ACTION_UPDATED = 'updated'
@@ -187,20 +218,44 @@ class AuditLog(models.Model):
     ACTION_RESTORED = 'restored'
     ACTION_DELETED_PERMANENT = 'deleted_permanent'
     ACTION_STATUS_TOGGLED = 'status_toggled'
+    ACTION_ANONYMIZED = 'anonymized'
+    ACTION_CANCELLED = 'cancelled'
+    ACTION_DUPLICATED = 'duplicated'
+    ACTION_APPROVED = 'approved'
+    ACTION_REJECTED = 'rejected'
     ACTION_CHOICES = [
         (ACTION_CREATED, 'Dodano'),
         (ACTION_UPDATED, 'Zaktualizowano'),
         (ACTION_ARCHIVED, 'Zarchiwizowano'),
         (ACTION_RESTORED, 'Przywrocono'),
         (ACTION_DELETED_PERMANENT, 'Usunieto na zawsze'),
-        (ACTION_STATUS_TOGGLED, 'Zmieniono status treningowy'),
+        (ACTION_STATUS_TOGGLED, 'Zmieniono status'),
+        (ACTION_ANONYMIZED, 'Zanonimizowano'),
+        (ACTION_CANCELLED, 'Odwolano'),
+        (ACTION_DUPLICATED, 'Powielono'),
+        (ACTION_APPROVED, 'Zatwierdzono'),
+        (ACTION_REJECTED, 'Odrzucono'),
     ]
 
     TARGET_OWNER = 'owner'
     TARGET_DOG = 'dog'
+    TARGET_PLAN = 'plan'
+    TARGET_TEMPLATE = 'template'
+    TARGET_SESSION = 'session'
+    TARGET_BOOKING = 'booking'
+    TARGET_PENDING_REQUEST = 'pending_request'
+    TARGET_PAYMENT = 'payment'
+    TARGET_PRICING_PLAN = 'pricing_plan'
     TARGET_CHOICES = [
         (TARGET_OWNER, 'Wlasciciel'),
         (TARGET_DOG, 'Pies'),
+        (TARGET_PLAN, 'Plan treningowy'),
+        (TARGET_TEMPLATE, 'Szablon planu'),
+        (TARGET_SESSION, 'Termin zajec'),
+        (TARGET_BOOKING, 'Rezerwacja'),
+        (TARGET_PENDING_REQUEST, 'Wniosek goscia'),
+        (TARGET_PAYMENT, 'Platnosc'),
+        (TARGET_PRICING_PLAN, 'Pozycja cennika'),
     ]
 
     timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Data i czas")
@@ -209,7 +264,7 @@ class AuditLog(models.Model):
         verbose_name="Uzytkownik"
     )
     action = models.CharField(max_length=20, choices=ACTION_CHOICES, verbose_name="Akcja")
-    target_type = models.CharField(max_length=10, choices=TARGET_CHOICES, verbose_name="Typ obiektu")
+    target_type = models.CharField(max_length=20, choices=TARGET_CHOICES, verbose_name="Typ obiektu")
     target_id = models.IntegerField(null=True, blank=True, verbose_name="ID obiektu")
     target_repr = models.CharField(max_length=200, verbose_name="Obiekt (nazwa w momencie akcji)")
     description = models.TextField(blank=True, verbose_name="Opis zmiany")

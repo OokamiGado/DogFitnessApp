@@ -11,6 +11,9 @@ urlpatterns = [
     path('', include('exercises.urls')),
     path('', include('clients.urls')),
     path('', include('plans.urls')),
+    path('', include('scheduling.urls')),
+    path('', include('dashboard.urls')),
+    path('', include('finance.urls')),
 ]
 
 if settings.DEBUG:

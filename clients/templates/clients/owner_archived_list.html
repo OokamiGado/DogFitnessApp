@@ -22,8 +22,8 @@
         <tbody>
             {% for owner in owners %}
             <tr>
-                <td>{{ owner.full_name }}</td>
-                <td>{{ owner.phone }}</td>
+                <td>{{ owner.full_name }}{% if owner.is_anonymized %} <span class="badge bg-secondary">Zanonimizowany</span>{% endif %}</td>
+                <td>{{ owner.phone|default:"-" }}</td>
                 <td>{{ owner.updated_at|date:"d.m.Y H:i" }}</td>
                 <td>
                     <form method="post" action="{% url 'owner_restore' owner.pk %}" style="display:inline;">
@@ -32,7 +32,15 @@
                             <i class="bi bi-arrow-counterclockwise"></i> Przywroc
                         </button>
                     </form>
-                    <form method="post" action="{% url 'owner_delete_permanent' owner.pk %}" style="display:inline;" onsubmit="return confirm('Czy na pewno chcesz usunac tego klienta NA ZAWSZE (wraz z psami)? Tej operacji nie mozna odwrocic.');">
+                    {% if not owner.is_anonymized %}
+                    <form method="post" action="{% url 'owner_anonymize' owner.pk %}" style="display:inline;" onsubmit="return confirm('Zanonimizowac dane osobowe tego klienta? Imie, telefon, email i adres zostana usuniete. PSY, PLANY TRENINGOWE I DZIENNIK TRENINGOWY ZOSTANA ZACHOWANE. Tej operacji nie mozna odwrocic.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-eye-slash"></i> Zanonimizuj
+                        </button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'owner_delete_permanent' owner.pk %}" style="display:inline;" onsubmit="return confirm('Czy na pewno chcesz usunac tego klienta NA ZAWSZE? To usunie TAKZE wszystkie jego psy, plany treningowe, rezerwacje w kalendarzu i caly dziennik treningowy (notatki z treningow). Jesli chcesz zachowac historie treningowa, uzyj opcji Zanonimizuj. Tej operacji nie mozna odwrocic.');">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger">
                             <i class="bi bi-trash"></i> Usun na zawsze

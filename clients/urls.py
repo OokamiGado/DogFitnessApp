@@ -10,6 +10,7 @@ urlpatterns = [
     path('clients/<int:pk>/edit/', views.owner_update, name='owner_update'),
     path('clients/<int:pk>/delete/', views.owner_delete, name='owner_delete'),
     path('clients/<int:pk>/restore/', views.owner_restore, name='owner_restore'),
+    path('clients/<int:pk>/anonymize/', views.owner_anonymize, name='owner_anonymize'),
     path('clients/<int:pk>/delete-permanent/', views.owner_delete_permanent, name='owner_delete_permanent'),
     path('clients/<int:owner_pk>/dogs/add/', views.dog_create, name='dog_create_for_owner'),
 

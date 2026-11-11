@@ -3,13 +3,20 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.http import HttpResponse
+from dogfitness.pdf_fonts import content_disposition
 
-from clients.models import Dog
+from clients.models import Dog, AuditLog
+from clients.audit import log_action
 from exercises.models import Exercise, MuscleGroup
 from .models import (
     TrainingPlan, ExerciseSet, PlanExercise,
     PlanTemplate, TemplateExerciseSet, TemplatePlanExercise,
     BrandingProfile,
+)
+from .document_generation import (
+    generate_detailed_pdf, generate_fiszka_pdf,
+    generate_detailed_docx, generate_fiszka_docx,
 )
 from .forms import (
     TrainingPlanForm, ExerciseSetForm, PlanExerciseForm,
@@ -18,6 +25,8 @@ from .forms import (
 )
 
 EXERCISES_PER_PAGE = 20
+PLANS_PER_PAGE = 12
+TEMPLATES_PER_PAGE = 12
 
 
 # ============ TRAINING PLAN ============
@@ -27,9 +36,13 @@ def plan_list(request, dog_pk):
     dog = get_object_or_404(Dog, pk=dog_pk)
     plans = dog.training_plans.filter(is_active=True)
     templates = PlanTemplate.objects.filter(is_active=True)
+
+    paginator = Paginator(plans, PLANS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'plans/plan_list.html', {
         'dog': dog,
-        'plans': plans,
+        'page_obj': page_obj,
         'templates': templates,
     })
 
@@ -43,6 +56,8 @@ def plan_create_blank(request, dog_pk):
             plan = form.save(commit=False)
             plan.dog = dog
             plan.save()
+            log_action(request, AuditLog.ACTION_CREATED, AuditLog.TARGET_PLAN, plan,
+                       f'Utworzono plan "{plan.name}" dla psa {dog.name}')
             messages.success(request, f'Plan "{plan.name}" zostal utworzony.')
             return redirect('plan_detail', pk=plan.pk)
     else:
@@ -92,6 +107,8 @@ def plan_create_from_template(request, dog_pk):
                     notes_text=t_pe.notes_text,
                 )
 
+        log_action(request, AuditLog.ACTION_CREATED, AuditLog.TARGET_PLAN, plan,
+                   f'Utworzono plan "{plan.name}" z szablonu "{template.name}"')
         messages.success(request, f'Plan zostal utworzony na podstawie szablonu "{template.name}". Mozesz go teraz zmodyfikowac.')
         return redirect('plan_detail', pk=plan.pk)
 
@@ -120,7 +137,10 @@ def plan_update(request, pk):
     if request.method == 'POST':
         form = TrainingPlanForm(request.POST, instance=plan)
         if form.is_valid():
+            changed_fields = list(form.changed_data)
             form.save()
+            description = f'Zmieniono pola: {", ".join(changed_fields)}' if changed_fields else 'Zapisano (brak zmian danych)'
+            log_action(request, AuditLog.ACTION_UPDATED, AuditLog.TARGET_PLAN, plan, description)
             messages.success(request, 'Plan zostal zaktualizowany.')
             return redirect('plan_detail', pk=plan.pk)
     else:
@@ -139,6 +159,8 @@ def plan_delete(request, pk):
     if request.method == 'POST':
         plan.is_active = False
         plan.save()
+        log_action(request, AuditLog.ACTION_ARCHIVED, AuditLog.TARGET_PLAN, plan,
+                   f'Zarchiwizowano plan "{plan.name}"')
         messages.success(request, 'Plan zostal przeniesiony do archiwum.')
         return redirect('plan_list', dog_pk=plan.dog.pk)
     return render(request, 'plans/plan_confirm_delete.html', {'plan': plan})
@@ -157,6 +179,8 @@ def plan_restore(request, pk):
     if request.method == 'POST':
         plan.is_active = True
         plan.save()
+        log_action(request, AuditLog.ACTION_RESTORED, AuditLog.TARGET_PLAN, plan,
+                   f'Przywrocono plan "{plan.name}"')
         messages.success(request, 'Plan zostal przywrocony.')
     return redirect('plan_archived_list', dog_pk=plan.dog.pk)
 
@@ -166,6 +190,9 @@ def plan_delete_permanent(request, pk):
     plan = get_object_or_404(TrainingPlan, pk=pk, is_active=False)
     dog_pk = plan.dog.pk
     if request.method == 'POST':
+        plan_name = plan.name
+        log_action(request, AuditLog.ACTION_DELETED_PERMANENT, AuditLog.TARGET_PLAN, plan,
+                   f'Usunieto na zawsze plan "{plan_name}"')
         plan.delete()
         messages.success(request, 'Plan zostal usuniety na zawsze.')
     return redirect('plan_archived_list', dog_pk=dog_pk)
@@ -396,7 +423,9 @@ def plan_exercise_move_down(request, pk):
 @login_required
 def template_list(request):
     templates = PlanTemplate.objects.filter(is_active=True)
-    return render(request, 'plans/template_list.html', {'templates': templates})
+    paginator = Paginator(templates, TEMPLATES_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    return render(request, 'plans/template_list.html', {'page_obj': page_obj})
 
 
 @login_required
@@ -405,6 +434,8 @@ def template_create(request):
         form = PlanTemplateForm(request.POST)
         if form.is_valid():
             template = form.save()
+            log_action(request, AuditLog.ACTION_CREATED, AuditLog.TARGET_TEMPLATE, template,
+                       f'Utworzono szablon "{template.name}"')
             messages.success(request, f'Szablon "{template.name}" zostal utworzony.')
             return redirect('template_detail', pk=template.pk)
     else:
@@ -427,7 +458,10 @@ def template_update(request, pk):
     if request.method == 'POST':
         form = PlanTemplateForm(request.POST, instance=template)
         if form.is_valid():
+            changed_fields = list(form.changed_data)
             form.save()
+            description = f'Zmieniono pola: {", ".join(changed_fields)}' if changed_fields else 'Zapisano (brak zmian danych)'
+            log_action(request, AuditLog.ACTION_UPDATED, AuditLog.TARGET_TEMPLATE, template, description)
             messages.success(request, 'Szablon zostal zaktualizowany.')
             return redirect('template_detail', pk=template.pk)
     else:
@@ -445,6 +479,8 @@ def template_delete(request, pk):
     if request.method == 'POST':
         template.is_active = False
         template.save()
+        log_action(request, AuditLog.ACTION_ARCHIVED, AuditLog.TARGET_TEMPLATE, template,
+                   f'Zarchiwizowano szablon "{template.name}"')
         messages.success(request, 'Szablon zostal przeniesiony do archiwum.')
         return redirect('template_list')
     return render(request, 'plans/template_confirm_delete.html', {'template': template})
@@ -462,6 +498,8 @@ def template_restore(request, pk):
     if request.method == 'POST':
         template.is_active = True
         template.save()
+        log_action(request, AuditLog.ACTION_RESTORED, AuditLog.TARGET_TEMPLATE, template,
+                   f'Przywrocono szablon "{template.name}"')
         messages.success(request, 'Szablon zostal przywrocony.')
     return redirect('template_archived_list')
 
@@ -470,6 +508,9 @@ def template_restore(request, pk):
 def template_delete_permanent(request, pk):
     template = get_object_or_404(PlanTemplate, pk=pk, is_active=False)
     if request.method == 'POST':
+        template_name = template.name
+        log_action(request, AuditLog.ACTION_DELETED_PERMANENT, AuditLog.TARGET_TEMPLATE, template,
+                   f'Usunieto na zawsze szablon "{template_name}"')
         template.delete()
         messages.success(request, 'Szablon zostal usuniety na zawsze.')
     return redirect('template_archived_list')
@@ -741,3 +782,51 @@ def branding_set_default(request, pk):
         profile.save()
         messages.success(request, f'Profil "{profile.name}" zostal ustawiony jako domyslny.')
     return redirect('branding_list')
+
+
+# ============ GENEROWANIE DOKUMENTOW (Etap 4) ============
+
+@login_required
+def plan_download_detailed_pdf(request, pk):
+    plan = get_object_or_404(TrainingPlan, pk=pk)
+    branding = BrandingProfile.get_default()
+    buf = generate_detailed_pdf(plan, branding)
+    response = HttpResponse(buf.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = content_disposition('inline', f'plan_szczegolowy_{plan.name}.pdf')
+    return response
+
+
+@login_required
+def plan_download_fiszka_pdf(request, pk):
+    plan = get_object_or_404(TrainingPlan, pk=pk)
+    branding = BrandingProfile.get_default()
+    buf = generate_fiszka_pdf(plan, branding)
+    response = HttpResponse(buf.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = content_disposition('inline', f'fiszka_{plan.name}.pdf')
+    return response
+
+
+@login_required
+def plan_download_detailed_docx(request, pk):
+    plan = get_object_or_404(TrainingPlan, pk=pk)
+    branding = BrandingProfile.get_default()
+    buf = generate_detailed_docx(plan, branding)
+    response = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    response['Content-Disposition'] = content_disposition('attachment', f'plan_szczegolowy_{plan.name}.docx')
+    return response
+
+
+@login_required
+def plan_download_fiszka_docx(request, pk):
+    plan = get_object_or_404(TrainingPlan, pk=pk)
+    branding = BrandingProfile.get_default()
+    buf = generate_fiszka_docx(plan, branding)
+    response = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    response['Content-Disposition'] = content_disposition('attachment', f'fiszka_{plan.name}.docx')
+    return response

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Usun platnosc{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-exclamation-triangle text-danger"></i> Usun platnosc</h1>
+    <a href="{% url 'payment_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Powrot
+    </a>
+</div>
+
+<div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill"></i> <b>Ta operacja jest nieodwracalna.</b>
+    Platnosc zostanie usunieta na zawsze z bazy danych. Fakt usuniecia (kwota, klient, data) zostanie
+    zapisany w dzienniku zmian, ale sam rekord platnosci przepadnie - NIE bedzie juz uwzgledniony
+    w zestawieniach przychodow.
+</div>
+
+<div class="form-card">
+    <p><strong>Klient:</strong> {{ payment.owner.full_name }}</p>
+    <p><strong>Kwota:</strong> {{ payment.amount }} PLN</p>
+    <p><strong>Data platnosci:</strong> {{ payment.payment_date|date:"d.m.Y" }}</p>
+    <p><strong>Status:</strong> {{ payment.get_status_display }}</p>
+    {% if payment.description %}<p><strong>Opis:</strong> {{ payment.description }}</p>{% endif %}
+
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Tak, usun na zawsze</button>
+        <a href="{% url 'payment_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+    </form>
+</div>
+{% endblock %}

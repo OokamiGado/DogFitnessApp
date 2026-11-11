@@ -16,7 +16,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'exercise_list' %}">
+            <a class="navbar-brand" href="{% url 'dashboard_home' %}">
                 <i class="bi bi-activity"></i> Dog Fitness
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -25,13 +25,19 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <div class="navbar-nav ms-auto align-items-lg-center">
                     {% if user.is_authenticated %}
+                        <a class="nav-link" href="{% url 'dashboard_home' %}"><i class="bi bi-house-door"></i> Panel</a>
                         <a class="nav-link" href="{% url 'exercise_list' %}"><i class="bi bi-list-ul"></i> Cwiczenia</a>
                         <a class="nav-link" href="{% url 'owner_list' %}"><i class="bi bi-people"></i> Klienci</a>
+                        <a class="nav-link" href="{% url 'session_list' %}">
+                            <i class="bi bi-calendar-week"></i> Kalendarz
+                            {% if pending_requests_count %}<span class="badge bg-danger">{{ pending_requests_count }}</span>{% endif %}
+                        </a>
                         <a class="nav-link" href="{% url 'template_list' %}"><i class="bi bi-file-earmark-text"></i> Szablony planow</a>
                         <a class="nav-link" href="{% url 'muscle_group_list' %}"><i class="bi bi-diagram-3"></i> Grupy miesniowe</a>
                         <a class="nav-link" href="{% url 'equipment_list' %}"><i class="bi bi-tools"></i> Sprzet</a>
                         <a class="nav-link" href="{% url 'storage_usage' %}"><i class="bi bi-hdd"></i> Uzycie dysku</a>
                         {% if user.is_staff %}
+                            <a class="nav-link" href="{% url 'payment_list' %}"><i class="bi bi-cash-coin"></i> Finanse</a>
                             <a class="nav-link" href="{% url 'branding_list' %}"><i class="bi bi-palette"></i> Wyglad dokumentow</a>
                             <a class="nav-link" href="{% url 'audit_log_list' %}"><i class="bi bi-journal-text"></i> Dziennik zmian</a>
                             <a class="nav-link" href="/admin/" target="_blank"><i class="bi bi-gear"></i> Panel admina</a>

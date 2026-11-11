@@ -59,4 +59,9 @@ urlpatterns = [
     path('branding/<int:pk>/edit/', views.branding_update, name='branding_update'),
     path('branding/<int:pk>/delete/', views.branding_delete, name='branding_delete'),
     path('branding/<int:pk>/set-default/', views.branding_set_default, name='branding_set_default'),
+    # ============ GENEROWANIE DOKUMENTOW (Etap 4) ============
+    path('plans/<int:pk>/download/detailed-pdf/', views.plan_download_detailed_pdf, name='plan_download_detailed_pdf'),
+    path('plans/<int:pk>/download/fiszka-pdf/', views.plan_download_fiszka_pdf, name='plan_download_fiszka_pdf'),
+    path('plans/<int:pk>/download/detailed-docx/', views.plan_download_detailed_docx, name='plan_download_detailed_docx'),
+    path('plans/<int:pk>/download/fiszka-docx/', views.plan_download_fiszka_docx, name='plan_download_fiszka_docx'),
 ]

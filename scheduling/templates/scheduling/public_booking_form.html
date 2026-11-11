@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zapisz sie na termin - Dog Fitness</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        /* Honeypot - niewidoczny dla czlowieka, ale wypelniany przez
+           proste boty ktore wypelniaja kazde pole formularza. */
+        .hp-field { position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-custom mb-4">
+        <div class="container">
+            <span class="navbar-brand"><i class="bi bi-activity"></i> Dog Fitness</span>
+        </div>
+    </nav>
+
+    <div class="container mb-5" style="max-width: 600px;">
+        <a href="{% url 'public_session_list' %}" class="text-muted small mb-3 d-inline-block">
+            <i class="bi bi-arrow-left"></i> Wroc do listy terminow
+        </a>
+
+        <div class="form-card">
+            <h2 class="mb-2">Zapisz sie na termin</h2>
+            <p class="text-muted mb-1">
+                <i class="bi bi-calendar"></i> {{ session_obj.date|date:"d.m.Y" }}
+                &middot; <i class="bi bi-clock"></i> {{ session_obj.start_time|time:"H:i" }}-{{ session_obj.end_time|time:"H:i" }}
+                {% if session_obj.location %} &middot; <i class="bi bi-geo-alt"></i> {{ session_obj.location }}{% endif %}
+            </p>
+
+            {% if session_obj.is_full %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> Ten termin jest juz pelny - Twoje zgloszenie trafi na <b>liste rezerwowa</b>.
+            </div>
+            {% endif %}
+
+            <p class="text-muted mb-4">Wypelnij formularz - trener skontaktuje sie z Toba, aby potwierdzic zapis.</p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="hp-field">
+                    <label for="{{ form.website.id_for_label }}">Strona www (nie wypelniaj)</label>
+                    {{ form.website }}
+                </div>
+
+                {% for field in form %}
+                    {% if field.name != 'website' and field.name != 'rodo_consent' %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<div class="invalid-feedback-custom">{{ error }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                <div class="mb-3 form-check">
+                    {{ form.rodo_consent }}
+                    <label class="form-check-label small" for="{{ form.rodo_consent.id_for_label }}">{{ form.rodo_consent.label }}</label>
+                    {% for error in form.rodo_consent.errors %}<div class="invalid-feedback-custom">{{ error }}</div>{% endfor %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg"></i> Wyslij zgloszenie</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

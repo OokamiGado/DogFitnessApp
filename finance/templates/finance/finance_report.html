@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Zestawienia przychodow{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-graph-up" style="color: #D4AF37;"></i> Zestawienia przychodow</h1>
+    <div>
+        <a href="{% url 'payment_list' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-cash-coin"></i> Platnosci
+        </a>
+        <a href="{% url 'finance_report_export_csv' %}?year={{ selected_year }}" class="btn btn-primary">
+            <i class="bi bi-download"></i> Eksport CSV (rok {{ selected_year }})
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Zestawienie zawiera TYLKO platnosci oznaczone jako <b>"Oplacone"</b>.
+    Platnosci oczekujace NIE wliczaja sie do przychodu. Eksport CSV zawiera szczegolowa liste (gotowa do przekazania ksiegowej).
+    {% if pending_in_year_count %}
+        <br><i class="bi bi-hourglass-split"></i> Dodatkowo: <b>{{ pending_in_year_count }}</b> platnosci oczekujacych
+        na ten rok ({{ pending_in_year_amount }} PLN) - NIE wliczone w zestawienie nizej.
+        <a href="{% url 'payment_list' %}?status=pending">Zobacz oczekujace</a>
+    {% endif %}
+</div>
+
+<div class="search-bar mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-3">
+            <select name="year" class="form-select" onchange="this.form.submit()">
+                {% for y in available_years %}
+                    <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>Rok {{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="stats-panel mb-4">
+    <div class="stat-box">
+        <span class="stat-number">{{ year_total_amount }} PLN</span>
+        <span class="stat-label">Przychod za {{ selected_year }}</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ year_total_count }}</span>
+        <span class="stat-label">Liczba platnosci</span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="detail-section mb-4">
+            <h5 class="mb-3"><i class="bi bi-calendar3"></i> Zestawienie miesieczne ({{ selected_year }})</h5>
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr><th>Miesiac</th><th class="text-end">Przychod</th><th class="text-end">Liczba platnosci</th></tr>
+                </thead>
+                <tbody>
+                    {% for m in monthly_data %}
+                    <tr{% if m.total == 0 %} class="text-muted"{% endif %}>
+                        <td>{{ m.month_name }}</td>
+                        <td class="text-end"><strong>{{ m.total }} PLN</strong></td>
+                        <td class="text-end">{{ m.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-light">
+                        <td><strong>SUMA ROCZNA</strong></td>
+                        <td class="text-end"><strong>{{ year_total_amount }} PLN</strong></td>
+                        <td class="text-end"><strong>{{ year_total_count }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="detail-section mb-4">
+            <h5 class="mb-3"><i class="bi bi-calendar-range"></i> Zestawienie kwartalne</h5>
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr><th>Kwartal</th><th class="text-end">Przychod</th><th class="text-end">Platnosci</th></tr>
+                </thead>
+                <tbody>
+                    {% for q in quarterly_data %}
+                    <tr{% if q.total == 0 %} class="text-muted"{% endif %}>
+                        <td>Q{{ q.quarter_num }}</td>
+                        <td class="text-end"><strong>{{ q.total }} PLN</strong></td>
+                        <td class="text-end">{{ q.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="detail-section">
+            <h5 class="mb-3"><i class="bi bi-wallet2"></i> Wedlug metody platnosci</h5>
+            {% if by_method_display %}
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr><th>Metoda</th><th class="text-end">Suma</th><th class="text-end">Liczba</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in by_method_display %}
+                    <tr>
+                        <td>{{ row.method_label }}</td>
+                        <td class="text-end">{{ row.total }} PLN</td>
+                        <td class="text-end">{{ row.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted small mb-0">Brak danych dla wybranego roku.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

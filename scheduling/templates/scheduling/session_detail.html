@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}{{ session_obj }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>
+        {{ session_obj.title|default:"Trening" }}
+        {% if session_obj.status == 'cancelled' %}<span class="archived-badge">Odwolany</span>
+        {% elif session_obj.status == 'completed' %}<span class="badge bg-secondary">Zakonczony</span>
+        {% else %}<span class="badge bg-primary">Zaplanowany</span>{% endif %}
+        {% if session_obj.is_public %}<span class="badge bg-info"><i class="bi bi-globe"></i> Publiczny</span>{% endif %}
+    </h1>
+    <div>
+        {% if session_obj.is_public %}
+        <a href="{% url 'public_session_list' %}" class="btn btn-outline-info" target="_blank">
+            <i class="bi bi-box-arrow-up-right"></i> Zobacz publiczna liste terminow
+        </a>
+        {% endif %}
+        <a href="{% url 'session_duplicate' session_obj.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-copy"></i> Powiel termin
+        </a>
+        <a href="{% url 'session_update' session_obj.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Edytuj
+        </a>
+        {% if session_obj.status != 'cancelled' %}
+        <a href="{% url 'session_delete' session_obj.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-x-circle"></i> Odwolaj termin
+        </a>
+        {% endif %}
+        <a href="{% url 'session_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Powrot do listy
+        </a>
+    </div>
+</div>
+
+{% if conflicts %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill"></i> <b>Uwaga - nakladajace sie terminy:</b>
+    <ul class="mb-0 mt-2">
+        {% for c in conflicts %}
+            <li><a href="{% url 'session_detail' c.pk %}">{{ c }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if pending_requests %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-person-exclamation"></i> <b>{{ pending_requests.count }} wniosek(i) od gosci czeka na weryfikacje</b> dla tego terminu.</span>
+    <a href="{% url 'pending_request_list' %}" class="btn btn-sm btn-warning">Przejdz do wnioskow</a>
+</div>
+{% endif %}
+
+<div class="stats-panel mb-4">
+    <div class="stat-box">
+        <span class="stat-number">{{ session_obj.date|date:"d.m.Y" }}</span>
+        <span class="stat-label">Data</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ session_obj.start_time|time:"H:i" }}-{{ session_obj.end_time|time:"H:i" }}</span>
+        <span class="stat-label">Godzina</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ session_obj.location|default:"-" }}</span>
+        <span class="stat-label">Miejsce</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ confirmed_bookings.count }}/{{ session_obj.capacity }}</span>
+        <span class="stat-label">Zapisani</span>
+    </div>
+</div>
+
+{% if session_obj.notes %}
+<div class="detail-section mb-4">
+    <h5>Notatki trenera</h5>
+    <p>{{ session_obj.notes|linebreaks }}</p>
+</div>
+{% endif %}
+
+<div class="detail-section mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-people-fill"></i> Zapisani ({{ confirmed_bookings.count }}/{{ session_obj.capacity }})</h4>
+        {% if session_obj.status != 'cancelled' %}
+        <div>
+            <a href="{% url 'booking_add_existing' session_obj.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-person-check"></i> Zapisz istniejacego klienta
+            </a>
+            <a href="{% url 'booking_add_new_client' session_obj.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-person-plus"></i> Zapisz nowego klienta
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if confirmed_bookings %}
+    <table class="table align-middle">
+        <thead><tr><th>Pies</th><th>Wlasciciel</th><th>Plan</th><th>Notatki</th><th>Status</th><th>Dziennik</th><th></th></tr></thead>
+        <tbody>
+            {% for b in confirmed_bookings %}
+            <tr>
+                <td><a href="{% url 'dog_detail' b.dog.pk %}">{{ b.dog.name }}</a></td>
+                <td>{{ b.dog.owner.full_name }} - {{ b.dog.owner.phone }}</td>
+                <td>
+                    {% if b.linked_plan %}
+                        <a href="{% url 'plan_detail' b.linked_plan.pk %}">{{ b.linked_plan.name }}</a>
+                    {% else %}
+                        <span class="text-muted">brak</span>
+                    {% endif %}
+                </td>
+                <td class="small text-muted">{{ b.notes|default:"-"|truncatechars:40 }}</td>
+                <td><span class="badge bg-success">{{ b.get_status_display }}</span></td>
+                <td>
+                    <a href="{% url 'booking_journal_edit' b.pk %}" class="small {% if b.has_journal_entry %}text-success{% else %}text-muted{% endif %}" title="Notatka z treningu">
+                        <i class="bi bi-journal-text"></i> {% if b.has_journal_entry %}Notatka{% else %}Dodaj notatke{% endif %}
+                    </a>
+                </td>
+                <td class="text-end">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Akcje</button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if user.is_staff %}
+                            <li><a class="dropdown-item" href="{% url 'payment_create_for_booking' b.pk %}"><i class="bi bi-cash-coin"></i> Zarejestruj platnosc</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            <li><form method="post" action="{% url 'booking_set_status' b.pk 'attended' %}">{% csrf_token %}<button class="dropdown-item" type="submit"><i class="bi bi-check-circle"></i> Oznacz obecnosc</button></form></li>
+                            <li><form method="post" action="{% url 'booking_set_status' b.pk 'no_show' %}">{% csrf_token %}<button class="dropdown-item" type="submit"><i class="bi bi-x-circle"></i> Oznacz nieobecnosc</button></form></li>
+                            <li><form method="post" action="{% url 'booking_set_status' b.pk 'cancelled' %}">{% csrf_token %}<button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash"></i> Odwolaj zapis</button></form></li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">Brak zapisanych psow.</p>
+    {% endif %}
+</div>
+
+{% if waiting_bookings %}
+<div class="detail-section mb-4">
+    <h4 class="mb-3"><i class="bi bi-hourglass-split"></i> Lista rezerwowa ({{ waiting_bookings.count }})</h4>
+    <table class="table align-middle">
+        <thead><tr><th>Pies</th><th>Wlasciciel</th><th>Zgloszono</th><th></th></tr></thead>
+        <tbody>
+            {% for b in waiting_bookings %}
+            <tr>
+                <td>{{ b.dog.name }}</td>
+                <td>{{ b.dog.owner.full_name }} - {{ b.dog.owner.phone }}</td>
+                <td class="small text-muted">{{ b.created_at|date:"d.m.Y H:i" }}</td>
+                <td class="text-end">
+                    <form method="post" action="{% url 'booking_set_status' b.pk 'cancelled' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i> Usun z listy</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if completed_bookings %}
+<div class="detail-section mb-4">
+    <h5 class="mb-3"><i class="bi bi-check2-all"></i> Obecni / Nieobecni ({{ completed_bookings.count }})</h5>
+    <table class="table table-sm align-middle">
+        <thead><tr><th>Pies</th><th>Wlasciciel</th><th>Status</th><th>Dziennik</th></tr></thead>
+        <tbody>
+            {% for b in completed_bookings %}
+            <tr>
+                <td>{{ b.dog.name }}</td>
+                <td class="small text-muted">{{ b.dog.owner.full_name }}</td>
+                <td>
+                    {% if b.status == 'attended' %}<span class="badge bg-success">Obecny</span>
+                    {% else %}<span class="badge bg-danger">Nieobecny</span>{% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'booking_journal_edit' b.pk %}" class="small {% if b.has_journal_entry %}text-success{% else %}text-muted{% endif %}">
+                        <i class="bi bi-journal-text"></i> {% if b.has_journal_entry %}Notatka{% else %}Dodaj notatke{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if cancelled_bookings %}
+<div class="detail-section">
+    <h5 class="text-muted mb-3"><i class="bi bi-clock-history"></i> Odwolane ({{ cancelled_bookings.count }})</h5>
+    <table class="table table-sm align-middle text-muted">
+        <tbody>
+            {% for b in cancelled_bookings %}
+            <tr><td>{{ b.dog.name }}</td><td>{{ b.dog.owner.full_name }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

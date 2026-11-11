@@ -8,6 +8,11 @@
         <a href="{% url 'owner_update' owner.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil"></i> Edytuj
         </a>
+        {% if user.is_staff %}
+        <a href="{% url 'payment_create_for_owner' owner.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-cash-coin"></i> Zarejestruj platnosc
+        </a>
+        {% endif %}
         <a href="{% url 'owner_delete' owner.pk %}" class="btn btn-outline-danger">
             <i class="bi bi-archive"></i> Archiwizuj
         </a>
@@ -62,6 +67,33 @@
                 <p>{{ owner.notes|linebreaks }}</p>
             {% endif %}
         </div>
+
+        {% if user.is_staff %}
+        <div class="detail-section">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Ostatnie platnosci</h5>
+                <a href="{% url 'payment_list' %}?owner={{ owner.pk }}" class="btn btn-sm btn-outline-secondary">Wszystkie</a>
+            </div>
+            {% if owner.payments.all %}
+            <table class="table table-sm mb-0">
+                <tbody>
+                    {% for p in owner.payments.all|slice:":5" %}
+                    <tr>
+                        <td class="small">{{ p.payment_date|date:"d.m.Y" }}</td>
+                        <td><strong>{{ p.amount }} PLN</strong></td>
+                        <td>
+                            {% if p.status == 'paid' %}<span class="badge bg-success">Oplacone</span>
+                            {% else %}<span class="badge bg-warning text-dark">Oczekuje</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted small mb-0">Brak zarejestrowanych platnosci.</p>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="col-md-7">

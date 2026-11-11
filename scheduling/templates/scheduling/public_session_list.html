@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dostepne terminy - Dog Fitness</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <nav class="navbar navbar-custom mb-4">
+        <div class="container">
+            <span class="navbar-brand"><i class="bi bi-activity"></i> Dog Fitness</span>
+        </div>
+    </nav>
+
+    <div class="container mb-5" style="max-width: 800px;">
+        <h1 class="mb-2"><i class="bi bi-calendar-week"></i> Dostepne terminy</h1>
+        <p class="text-muted mb-4">Wybierz termin i zapisz swojego psa na zajecia.</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'success' }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="search-bar mb-4">
+            <div class="btn-group w-100" role="group">
+                <a href="?range=7" class="btn {% if range_filter == '7' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Najblizsze 7 dni</a>
+                <a href="?range=30" class="btn {% if range_filter == '30' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Najblizsze 30 dni</a>
+                <a href="?range=all" class="btn {% if range_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Wszystkie</a>
+            </div>
+        </div>
+
+        {% if sessions %}
+            {% regroup sessions by date as sessions_by_date %}
+            {% for day in sessions_by_date %}
+                <h5 class="mt-4 mb-2 text-muted">{{ day.grouper|date:"l, d.m.Y" }}</h5>
+                {% for s in day.list %}
+                <div class="detail-section mb-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">{{ s.title|default:"Trening" }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-clock"></i> {{ s.start_time|time:"H:i" }}-{{ s.end_time|time:"H:i" }}
+                            {% if s.location %} &middot; <i class="bi bi-geo-alt"></i> {{ s.location }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        {% if s.is_full %}
+                            <span class="badge bg-warning text-dark mb-2 d-block">Termin pelny</span>
+                            <a href="{% url 'public_booking_request' s.pk %}" class="btn btn-sm btn-outline-primary">Zapisz na liste rezerwowa</a>
+                        {% else %}
+                            <span class="badge bg-success mb-2 d-block">{{ s.available_slots }} wolnych miejsc</span>
+                            <a href="{% url 'public_booking_request' s.pk %}" class="btn btn-sm btn-primary">Zapisz sie</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <p>Brak dostepnych terminow w wybranym okresie.</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

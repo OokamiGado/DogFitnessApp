@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Zapisz na termin{% endblock %}
+
+{% block content %}
+<div class="form-card" style="max-width: 600px; margin: 0 auto;">
+    <h2 class="mb-2">
+        {% if mode == 'new' %}Zapisz nowego klienta{% else %}Zapisz istniejacego klienta{% endif %}
+    </h2>
+    <p class="text-muted mb-4">Termin: <b>{{ session_obj }}</b> ({{ session_obj.confirmed_count }}/{{ session_obj.capacity }} zajetych)</p>
+
+    {% if session_obj.is_full %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> Termin jest pelny - zapis trafi na <b>liste rezerwowa</b>.
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}<div class="invalid-feedback-custom">{{ error }}</div>{% endfor %}
+            </div>
+        {% endfor %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        {% if mode == 'existing' %}
+        <div class="mb-3" id="linked-plan-wrapper" style="display:none;">
+            <label class="form-label">Powiazany plan treningowy (opcjonalnie)</label>
+            <select name="linked_plan" id="id_linked_plan_select" class="form-select">
+                <option value="">— brak —</option>
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'session_detail' session_obj.pk %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Anuluj
+            </a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz</button>
+        </div>
+    </form>
+</div>
+
+{% if mode == 'existing' %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var dogSelect = document.getElementById('id_dog');
+    var planWrapper = document.getElementById('linked-plan-wrapper');
+    var planSelect = document.getElementById('id_linked_plan_select');
+
+    if (dogSelect) {
+        dogSelect.addEventListener('change', function() {
+            var dogId = this.value;
+            if (!dogId) { planWrapper.style.display = 'none'; return; }
+            fetch('/scheduling/ajax/dogs/' + dogId + '/plans/')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    planSelect.innerHTML = '<option value="">— brak —</option>';
+                    data.plans.forEach(function(p) {
+                        var opt = document.createElement('option');
+                        opt.value = p.pk;
+                        opt.textContent = p.name;
+                        planSelect.appendChild(opt);
+                    });
+                    planWrapper.style.display = data.plans.length ? 'block' : 'none';
+                });
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

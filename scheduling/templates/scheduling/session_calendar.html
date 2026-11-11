@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Widok kalendarza{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-calendar3"></i> Kalendarz</h1>
+    <div>
+        <a href="{% url 'session_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list-ul"></i> Widok listy
+        </a>
+        <a href="{% url 'session_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Dodaj termin
+        </a>
+    </div>
+</div>
+
+<div class="form-card">
+    <div id="calendar"></div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'pl',
+        firstDay: 1,
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+        },
+        buttonText: {
+            today: 'Dzis',
+            month: 'Miesiac',
+            week: 'Tydzien',
+            list: 'Lista'
+        },
+        height: 'auto',
+        events: function(info, successCallback, failureCallback) {
+            fetch("{% url 'session_calendar_feed' %}?start=" + info.startStr + "&end=" + info.endStr)
+                .then(function(response) { return response.json(); })
+                .then(function(data) { successCallback(data); })
+                .catch(function(error) { failureCallback(error); });
+        },
+        eventClick: function(info) {
+            info.jsEvent.preventDefault();
+            if (info.event.url) {
+                window.location.href = info.event.url;
+            }
+        },
+    });
+    calendar.render();
+});
+</script>
+{% endblock %}

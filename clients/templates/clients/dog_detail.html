@@ -81,4 +81,43 @@
         </div>
     </div>
 </div>
+
+
+<div class="detail-section mt-4">
+    <h4 class="mb-3"><i class="bi bi-journal-text"></i> Historia treningow (dziennik)</h4>
+    {% if training_history %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead><tr><th>Data</th><th>Termin</th><th>Status</th><th>Notatka z treningu</th><th></th></tr></thead>
+            <tbody>
+                {% for b in training_history %}
+                <tr>
+                    <td class="small">{{ b.session.date|date:"d.m.Y" }}</td>
+                    <td class="small">{{ b.session.title|default:"Trening" }} ({{ b.session.start_time|time:"H:i" }})</td>
+                    <td>
+                        {% if b.status == 'attended' %}<span class="badge bg-success">Obecny</span>
+                        {% elif b.status == 'no_show' %}<span class="badge bg-danger">Nieobecny</span>
+                        {% elif b.status == 'cancelled' %}<span class="archived-badge">Odwolany</span>
+                        {% elif b.status == 'waiting_list' %}<span class="badge bg-warning text-dark">Rezerwowa</span>
+                        {% else %}<span class="badge bg-primary">Zapisany</span>{% endif %}
+                    </td>
+                    <td class="small">{{ b.journal_entry|default:"-"|truncatechars:60 }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'session_detail' b.session.pk %}" class="btn btn-sm btn-outline-secondary" title="Przejdz do terminu">
+                            <i class="bi bi-calendar-event"></i>
+                        </a>
+                        <a href="{% url 'booking_journal_edit' b.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj notatke">
+                            <i class="bi bi-journal-text"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted small">Brak historii treningow - zapisz psa na termin w Kalendarzu, zeby zaczac budowac dziennik.</p>
+    {% endif %}
+</div>
+
 {% endblock %}

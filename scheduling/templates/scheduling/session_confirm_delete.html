@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Odwolaj termin{% endblock %}
+
+{% block content %}
+<div class="form-card" style="max-width: 600px; margin: 0 auto;">
+    <h2 class="mb-4"><i class="bi bi-exclamation-triangle text-danger"></i> Odwolaj termin</h2>
+    <p>Czy na pewno chcesz odwolac termin <b>{{ session_obj }}</b>?</p>
+    <p class="text-muted">Wszystkie aktywne rezerwacje ({{ session_obj.active_bookings.count }}) zostana automatycznie odwolane. Historia zostanie zachowana.</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'session_detail' session_obj.pk %}" class="btn btn-secondary">Anuluj</a>
+            <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> Tak, odwolaj termin</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-cash-coin"></i> {{ title }}</h1>
+    <a href="{% url 'payment_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Powrot
+    </a>
+</div>
+
+{% if fixed_owner %}
+<div class="alert alert-info">
+    <i class="bi bi-person-circle"></i> Platnosc dla klienta: <strong>{{ fixed_owner.full_name }}</strong>
+</div>
+{% endif %}
+{% if fixed_booking %}
+<div class="alert alert-info">
+    <i class="bi bi-calendar-check"></i> Platnosc za rezerwacje: <strong>{{ fixed_booking.dog.name }} - {{ fixed_booking.session }}</strong>
+</div>
+{% endif %}
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+            {% if not field.is_hidden %}
+                <label class="form-label">{{ field.label }}</label>
+            {% endif %}
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Zapisz platnosc</button>
+        <a href="{% url 'payment_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+    </form>
+</div>
+{% endblock %}
