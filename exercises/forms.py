@@ -38,18 +38,23 @@ class ExerciseForm(forms.ModelForm):
     class Meta:
         model = Exercise
         fields = [
-            'name', 'description', 'video_url',
-            'muscle_groups', 'difficulty', 'equipment',
+            'name', 'description', 'goal', 'video_url',
+            'muscle_groups', 'difficulty',
             'contraindications', 'contraindication_tags',
             'parent_exercise', 'variant_name',
         ]
+        # UWAGA: 'equipment' NIE jest tu wymieniony - sprzet (z iloscia,
+        # np. "2x Podest") jest obslugiwany recznie w widoku
+        # (exercise_create/exercise_update), bo ManyToManyField z
+        # through= (ExerciseEquipment) nie wspiera automatycznego
+        # zapisu przez form.save_m2m().
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nazwa cwiczenia'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Opisz jak wykonac cwiczenie...'}),
+            'goal': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'np. Wzmacnia miesnie grzbietu i poprawia stabilizacje (opcjonalnie)'}),
             'video_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://youtube.com/watch?v=...'}),
             'muscle_groups': forms.CheckboxSelectMultiple(),
             'difficulty': forms.Select(attrs={'class': 'form-select'}),
-            'equipment': forms.CheckboxSelectMultiple(),
             'contraindications': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Np. nie dla psow z dysplazja stawow...'}),
             'contraindication_tags': forms.CheckboxSelectMultiple(),
             'parent_exercise': forms.Select(attrs={'class': 'form-select'}),
@@ -67,6 +72,7 @@ class ExerciseForm(forms.ModelForm):
         self.fields['parent_exercise'].empty_label = "- Samodzielne cwiczenie (nie wariant) -"
         self.fields['variant_name'].required = False
         self.fields['contraindication_tags'].required = False
+        self.fields['goal'].required = False
 
     def clean_name(self):
         name = self.cleaned_data.get('name', '').strip()

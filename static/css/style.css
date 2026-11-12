@@ -370,6 +370,13 @@ h1, h2, h3, h4, h5 {
     overflow-y: auto;
 }
 
+.equipment-qty-list {
+    background: var(--light-bg);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid #e5e5e5;
+}
+
 .checkbox-group label {
     display: block;
     margin-bottom: 0.4rem;

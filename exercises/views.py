@@ -8,7 +8,7 @@ from django.db import connection
 from django.db.models import Q, Case, When, IntegerField
 from django.core.paginator import Paginator
 from django.http import JsonResponse
-from .models import MuscleGroup, Equipment, Exercise, ExerciseImage
+from .models import MuscleGroup, Equipment, Exercise, ExerciseImage, ExerciseEquipment
 from .forms import MuscleGroupForm, EquipmentForm, ExerciseForm, ExerciseImageUploadForm
 from . import storage_utils
 
@@ -233,6 +233,42 @@ def _create_images_with_order(exercise, images):
     return created
 
 
+def _get_equipment_quantities_context(exercise=None):
+    """Buduje liste (equipment_obj, current_quantity) dla WSZYSTKICH
+    pozycji sprzetu w systemie - do wyswietlenia w formularzu cwiczenia.
+    current_quantity=0 oznacza 'nie uzywane w tym cwiczeniu'."""
+    current_qty_by_id = {}
+    if exercise and exercise.pk:
+        current_qty_by_id = {
+            item.equipment_id: item.quantity for item in exercise.equipment_items.all()
+        }
+    return [
+        {'equipment': eq, 'quantity': current_qty_by_id.get(eq.pk, 0)}
+        for eq in Equipment.objects.all()
+    ]
+
+
+def _save_equipment_items(request, exercise):
+    """Zapisuje sprzet + ilosc dla cwiczenia na podstawie POST danych
+    w formacie 'equipment_qty_<id>'. Ilosc 0 (albo brak/niepoprawna
+    wartosc) oznacza 'ten sprzet nie jest uzywany w tym cwiczeniu' -
+    usuwamy wpis jesli istnieje. Ilosc > 0 - tworzymy/aktualizujemy."""
+    for equipment in Equipment.objects.all():
+        raw_value = request.POST.get(f'equipment_qty_{equipment.pk}', '').strip()
+        try:
+            quantity = int(raw_value)
+        except (ValueError, TypeError):
+            quantity = 0
+
+        if quantity > 0:
+            ExerciseEquipment.objects.update_or_create(
+                exercise=exercise, equipment=equipment,
+                defaults={'quantity': quantity}
+            )
+        else:
+            ExerciseEquipment.objects.filter(exercise=exercise, equipment=equipment).delete()
+
+
 @login_required
 def exercise_create(request):
     if request.method == 'POST':
@@ -241,6 +277,7 @@ def exercise_create(request):
 
         if form.is_valid() and image_form.is_valid():
             exercise = form.save()
+            _save_equipment_items(request, exercise)
 
             images = request.FILES.getlist('images')
             _create_images_with_order(exercise, images)
@@ -262,6 +299,7 @@ def exercise_create(request):
         'image_form': image_form,
         'title': 'Dodaj cwiczenie',
         'existing_images_count': 0,
+        'equipment_quantities': _get_equipment_quantities_context(),
     })
 
 
@@ -276,6 +314,7 @@ def exercise_update(request, pk):
 
         if form.is_valid() and image_form.is_valid():
             form.save()
+            _save_equipment_items(request, exercise)
 
             images = request.FILES.getlist('images')
             _create_images_with_order(exercise, images)
@@ -303,6 +342,7 @@ def exercise_update(request, pk):
         'title': 'Edytuj cwiczenie',
         'exercise': exercise,
         'existing_images_count': existing_count,
+        'equipment_quantities': _get_equipment_quantities_context(exercise),
     })
 
 
@@ -341,7 +381,10 @@ def exercise_duplicate(request, pk):
         is_active=True,
     )
     new_exercise.muscle_groups.set(original.muscle_groups.all())
-    new_exercise.equipment.set(original.equipment.all())
+    for item in original.equipment_items.all():
+        ExerciseEquipment.objects.create(
+            exercise=new_exercise, equipment=item.equipment, quantity=item.quantity
+        )
 
     messages.success(request, 'Cwiczenie zostalo zduplikowane jako wariant. Zdjecia nie zostaly skopiowane - dodaj je osobno.')
     return redirect('exercise_update', pk=new_exercise.pk)

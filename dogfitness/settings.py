@@ -122,30 +122,15 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 #/CDN moze cache'owac stara wersje pod tym samym URL-em, co przy kazdym
 # redeployu grozi bledem typu "corrupted content" (niezgodna zawartosc
 # pod tym samym adresem miedzy wersjami).
-# WAZNE (kompatybilnosc z django-cloudinary-storage 0.3.0):
-# Ta biblioteka ma WLASNY kod obslugi 'collectstatic', ktory wewnetrznie
-# odwoluje sie do STAREGO ustawienia 'STATICFILES_STORAGE' (string) -
-# nie zostala zaktualizowana pod Django 5.1+, ktory usunal to ustawienie
-# na rzecz 'STORAGES' (dict). Trzymamy WIEC OBIE nazwy: Django realnie
-# uzywa 'STORAGES', a 'STATICFILES_STORAGE' istnieje jako "atrapa" dla
-# bibliotek ktore jeszcze go odczytuja - w 100% bezpieczne.
-#
-# Backend jest warunkowy na DEBUG: produkcja (DEBUG=False) uzywa
-# WhiteNoise z manifestem (hash w nazwie pliku), lokalny dev (DEBUG=True,
-# 'runserver' bez wczesniejszego collectstatic) uzywa zwyklego
-# Django storage, zeby NIE wymagac collectstatic przed kazdym startem.
-_STATICFILES_BACKEND = (
-    'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
-    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
-)
-STATICFILES_STORAGE = _STATICFILES_BACKEND
-
 STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
-        'BACKEND': _STATICFILES_BACKEND,
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
     },
 }
 
@@ -158,8 +143,11 @@ if USE_CLOUDINARY:
         'API_KEY': config('CLOUDINARY_API_KEY', default=''),
         'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
     }
-    # Django 5.1+ wymaga storage dla plikow media przez STORAGES['default']
-    # (nowy styl), NIE przez stary 'DEFAULT_FILE_STORAGE' (string).
+    # WAZNE: Django 5.1+ wymaga, by storage dla plikow media byl
+    # ustawiony przez STORAGES['default'] (nowy styl), NIE przez stary
+    # 'DEFAULT_FILE_STORAGE' (string) - te dwa style sie WYKLUCZAJA.
+    # Nadpisujemy wiec wczesniej zdefiniowany STORAGES['default']
+    # (FileSystemStorage) na storage Cloudinary.
     STORAGES['default'] = {
         'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
     }

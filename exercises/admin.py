@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import MuscleGroup, Equipment, Exercise, ExerciseImage, ContraindicationTag
+from .models import MuscleGroup, Equipment, Exercise, ExerciseImage, ContraindicationTag, ExerciseEquipment
 
 
 class ExerciseImageInline(admin.TabularInline):
@@ -7,6 +7,14 @@ class ExerciseImageInline(admin.TabularInline):
     extra = 1
     max_num = 5
     fields = ('image', 'is_cover', 'order')
+
+
+class ExerciseEquipmentInline(admin.TabularInline):
+    """Sprzet + ilosc dla cwiczenia - M2M z through= nie wspiera
+    filter_horizontal, dlatego uzywamy inline (tak jak dla zdjec)."""
+    model = ExerciseEquipment
+    extra = 1
+    fields = ('equipment', 'quantity')
 
 
 @admin.register(MuscleGroup)
@@ -30,10 +38,10 @@ class ContraindicationTagAdmin(admin.ModelAdmin):
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
     list_display = ('name', 'variant_name', 'parent_exercise', 'difficulty', 'is_active', 'created_at')
-    list_filter = ('difficulty', 'is_active', 'muscle_groups', 'equipment', 'contraindication_tags')
+    list_filter = ('difficulty', 'is_active', 'muscle_groups', 'contraindication_tags')
     search_fields = ('name', 'description', 'variant_name')
-    filter_horizontal = ('muscle_groups', 'equipment', 'contraindication_tags')
-    inlines = [ExerciseImageInline]
+    filter_horizontal = ('muscle_groups', 'contraindication_tags')
+    inlines = [ExerciseImageInline, ExerciseEquipmentInline]
     actions = ['make_active', 'make_archived']
     list_per_page = 50
     date_hierarchy = 'created_at'

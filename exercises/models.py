@@ -42,6 +42,29 @@ class ContraindicationTag(models.Model):
         return self.name
 
 
+class ExerciseEquipment(models.Model):
+    """Pozycja sprzetu potrzebnego do cwiczenia, z ILOSCIA (np. "2x Podest
+    30x30"). To jest 'through' model dla Exercise.equipment - pozwala
+    przypisac quantity do kazdej relacji cwiczenie<->sprzet, czego nie
+    dalo rady zrobic na prostym ManyToManyField."""
+    exercise = models.ForeignKey(
+        'Exercise', on_delete=models.CASCADE, related_name='equipment_items'
+    )
+    equipment = models.ForeignKey(
+        Equipment, on_delete=models.CASCADE, related_name='exercise_items'
+    )
+    quantity = models.PositiveSmallIntegerField(default=1, verbose_name="Ilosc")
+
+    class Meta:
+        ordering = ['equipment__name']
+        unique_together = ('exercise', 'equipment')
+        verbose_name = "Sprzet do cwiczenia"
+        verbose_name_plural = "Sprzet do cwiczenia"
+
+    def __str__(self):
+        return f"{self.quantity}x {self.equipment.name}"
+
+
 class Exercise(models.Model):
     DIFFICULTY_CHOICES = [
         ('easy', 'Latwy'),
@@ -51,10 +74,18 @@ class Exercise(models.Model):
 
     name = models.CharField(max_length=200, verbose_name="Nazwa")
     description = models.TextField(verbose_name="Opis")
+    goal = models.TextField(
+        blank=True, verbose_name="Cel cwiczenia",
+        help_text='Opcjonalnie - np. "Wzmacnia miesnie grzbietu i poprawia stabilizacje". '
+                   'To jest INNE pole niz Opis - Opis mowi JAK wykonac cwiczenie, Cel mowi PO CO je wykonywac.'
+    )
     video_url = models.URLField(blank=True, null=True, verbose_name="Link do video", help_text="Link np. do YouTube")
     muscle_groups = models.ManyToManyField(MuscleGroup, related_name='exercises', verbose_name="Grupy miesniowe")
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, verbose_name="Poziom trudnosci")
-    equipment = models.ManyToManyField(Equipment, blank=True, related_name='exercises', verbose_name="Potrzebny sprzet")
+    equipment = models.ManyToManyField(
+        Equipment, through='ExerciseEquipment', blank=True,
+        related_name='exercises', verbose_name="Potrzebny sprzet"
+    )
     contraindications = models.TextField(blank=True, verbose_name="Przeciwwskazania")
     contraindication_tags = models.ManyToManyField(
         ContraindicationTag, blank=True, related_name='exercises',
@@ -115,6 +146,11 @@ class Exercise(models.Model):
         """Zwraca zdjecie oznaczone jako okladka, albo pierwsze dostepne zdjecie (wg kolejnosci)"""
         cover = self.images.filter(is_cover=True).first()
         return cover or self.images.order_by('order', 'pk').first()
+
+    def get_equipment_items(self):
+        """Lista pozycji sprzetu z iloscia (ExerciseEquipment), do
+        wyswietlania w szablonach jako np. '2x Podest 30x30'."""
+        return self.equipment_items.select_related('equipment').all()
 
 
 class ExerciseImage(models.Model):

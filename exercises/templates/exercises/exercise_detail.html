@@ -55,6 +55,11 @@
             <h5><i class="bi bi-file-text"></i> Opis</h5>
             <p>{{ exercise.description|linebreaks }}</p>
 
+            {% if exercise.goal %}
+            <h5><i class="bi bi-bullseye"></i> Cel cwiczenia</h5>
+            <p class="text-muted">{{ exercise.goal|linebreaks }}</p>
+            {% endif %}
+
             <div class="mb-3">
                 <span class="badge badge-difficulty-{{ exercise.difficulty }} fs-6">
                     {{ exercise.get_difficulty_display }}
@@ -70,8 +75,8 @@
 
             <h5><i class="bi bi-tools"></i> Potrzebny sprzet</h5>
             <p>
-                {% for item in exercise.equipment.all %}
-                    <span class="badge badge-equipment">{{ item.name }}</span>
+                {% for item in exercise.get_equipment_items %}
+                    <span class="badge badge-equipment">{{ item.quantity }}x {{ item.equipment.name }}</span>
                 {% empty %}
                     <span class="text-muted">Brak - cwiczenie bez sprzetu</span>
                 {% endfor %}
