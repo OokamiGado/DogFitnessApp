@@ -90,8 +90,12 @@ WSGI_APPLICATION = 'dogfitness.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
     }
 }
 
@@ -122,20 +126,22 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Ta biblioteka ma WLASNY kod obslugi 'collectstatic', ktory wewnetrznie
 # odwoluje sie do STAREGO ustawienia 'STATICFILES_STORAGE' (string) -
 # nie zostala zaktualizowana pod Django 5.1+, ktory usunal to ustawienie
-# na rzecz 'STORAGES' (dict). Trzymamy WIEC OBIE nazwy: Django realnie
-# uzywa 'STORAGES', a 'STATICFILES_STORAGE' istnieje jako "atrapa" dla
-# bibliotek ktore jeszcze go odczytuja - w 100% bezpieczne, bo kazda
-# biblioteka czyta tylko ta nazwe, ktorej faktycznie potrzebuje.
-#
-# Backend jest warunkowy na DEBUG: produkcja (DEBUG=False) uzywa
-# WhiteNoise z manifestem (hash w nazwie pliku), lokalny dev (DEBUG=True,
-# 'runserver' bez wczesniejszego collectstatic) uzywa zwyklego Django
-# storage, zeby NIE wymagac collectstatic przed kazdym startem.
+# na rzecz 'STORAGES' (dict). Trzymamy WIEC OBIE nazwy - w 100% bezpieczne.
 _STATICFILES_BACKEND = (
     'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
     else 'django.contrib.staticfiles.storage.StaticFilesStorage'
 )
 STATICFILES_STORAGE = _STATICFILES_BACKEND
+
+# WHITENOISE_MANIFEST_STRICT = False: siatka bezpieczenstwa. Domyslnie
+# (True) WhiteNoise PRZERYWA caly 'collectstatic' (a wiec caly build na
+# Render) jesli JAKIKOLWIEK plik CSS/JS odwoluje sie do pliku, ktory nie
+# istnieje (np. plik admina Django w niezgodnej/uszkodzonej wersji
+# pakietu w cache serwera budujacego - co bylo przyczyna bledu
+# 'sorting-icons.svg could not be found'). Ustawiajac False, taki JEDEN
+# brakujacy plik jest cicho pomijany, a reszta plikow nadal dostaje
+# poprawny hash - build NIE PADA z tego powodu.
+WHITENOISE_MANIFEST_STRICT = False
 
 STORAGES = {
     'default': {
