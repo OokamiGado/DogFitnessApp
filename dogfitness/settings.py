@@ -113,8 +113,29 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # WhiteNoise - serwuje pliki statyczne (CSS, fonty) bezposrednio z Django,
 # bez potrzeby osobnego serwera (nginx) - wystarczajace dla skali tej
 # aplikacji. CompressedManifestStaticFilesStorage dodaje hash do nazwy
-# pliku (cache busting) i kompresuje gzip/brotli przy 'collectstatic'.
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# pliku (cache busting + kompresja gzip/brotli) - ale WYMAGA, by
+# 'collectstatic' zostal wczesniej uruchomiony (generuje manifest).
+#
+# WAZNE (2 oddzielne problemy naprawione razem):
+# 1. Django 5.1+ USUNAL wsparcie dla starego 'STATICFILES_STORAGE'
+#    (string) - bylo CICHO ignorowane, bez bledu. Trzeba uzyc 'STORAGES'.
+# 2. ManifestStaticFilesStorage NIE MOZE byc uzywany bezwarunkowo -
+#    w DEBUG=True (lokalny 'runserver' bez wczesniejszego collectstatic)
+#    {% static %} crashowalby CALA aplikacje. Dlatego WhiteNoise jest
+#    uzywany TYLKO gdy DEBUG=False (produkcja, gdzie build.sh zawsze
+#    robi collectstatic PRZED startem serwera) - lokalnie dziala jak
+#    dotychczas, bez zadnych dodatkowych krokow.
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
