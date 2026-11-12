@@ -113,27 +113,39 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # WhiteNoise - serwuje pliki statyczne (CSS, fonty) bezposrednio z Django,
 # bez potrzeby osobnego serwera (nginx) - wystarczajace dla skali tej
 # aplikacji. CompressedManifestStaticFilesStorage dodaje hash do nazwy
-# pliku (cache busting + kompresja gzip/brotli) - ale WYMAGA, by
-# 'collectstatic' zostal wczesniej uruchomiony (generuje manifest).
+# pliku (cache busting) i kompresuje gzip/brotli przy 'collectstatic'.
 #
-# WAZNE (2 oddzielne problemy naprawione razem):
-# 1. Django 5.1+ USUNAL wsparcie dla starego 'STATICFILES_STORAGE'
-#    (string) - bylo CICHO ignorowane, bez bledu. Trzeba uzyc 'STORAGES'.
-# 2. ManifestStaticFilesStorage NIE MOZE byc uzywany bezwarunkowo -
-#    w DEBUG=True (lokalny 'runserver' bez wczesniejszego collectstatic)
-#    {% static %} crashowalby CALA aplikacje. Dlatego WhiteNoise jest
-#    uzywany TYLKO gdy DEBUG=False (produkcja, gdzie build.sh zawsze
-#    robi collectstatic PRZED startem serwera) - lokalnie dziala jak
-#    dotychczas, bez zadnych dodatkowych krokow.
+# WAZNE: Django 5.1+ USUNAL wsparcie dla starego ustawienia
+# 'STATICFILES_STORAGE' (string) - jest teraz CICHO ignorowane, bez
+# bledu/ostrzezenia! Trzeba uzyc nowego formatu 'STORAGES' (dict).
+# Bez tego CSS/fonty sa serwowane bez hasha w nazwie pliku - przegladarka
+#/CDN moze cache'owac stara wersje pod tym samym URL-em, co przy kazdym
+# redeployu grozi bledem typu "corrupted content" (niezgodna zawartosc
+# pod tym samym adresem miedzy wersjami).
+# WAZNE (kompatybilnosc z django-cloudinary-storage 0.3.0):
+# Ta biblioteka ma WLASNY kod obslugi 'collectstatic', ktory wewnetrznie
+# odwoluje sie do STAREGO ustawienia 'STATICFILES_STORAGE' (string) -
+# nie zostala zaktualizowana pod Django 5.1+, ktory usunal to ustawienie
+# na rzecz 'STORAGES' (dict). Trzymamy WIEC OBIE nazwy: Django realnie
+# uzywa 'STORAGES', a 'STATICFILES_STORAGE' istnieje jako "atrapa" dla
+# bibliotek ktore jeszcze go odczytuja - w 100% bezpieczne.
+#
+# Backend jest warunkowy na DEBUG: produkcja (DEBUG=False) uzywa
+# WhiteNoise z manifestem (hash w nazwie pliku), lokalny dev (DEBUG=True,
+# 'runserver' bez wczesniejszego collectstatic) uzywa zwyklego
+# Django storage, zeby NIE wymagac collectstatic przed kazdym startem.
+_STATICFILES_BACKEND = (
+    'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
+    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+)
+STATICFILES_STORAGE = _STATICFILES_BACKEND
+
 STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
-        'BACKEND': (
-            'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
-            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
-        ),
+        'BACKEND': _STATICFILES_BACKEND,
     },
 }
 
@@ -146,7 +158,11 @@ if USE_CLOUDINARY:
         'API_KEY': config('CLOUDINARY_API_KEY', default=''),
         'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
     }
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    # Django 5.1+ wymaga storage dla plikow media przez STORAGES['default']
+    # (nowy styl), NIE przez stary 'DEFAULT_FILE_STORAGE' (string).
+    STORAGES['default'] = {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+    }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
