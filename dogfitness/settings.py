@@ -140,6 +140,21 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 _STATICFILES_BACKEND = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 STATICFILES_STORAGE = _STATICFILES_BACKEND
 
+# ============ WHITENOISE_USE_FINDERS = True (KLUCZOWA ZMIANA) ============
+# PRZYCZYNA bledu "404 dla style.css mimo ze build przeszedl": mechanizm
+# 'collectstatic -> STATIC_ROOT -> WhiteNoise' okazal sie niestabilny
+# na tym konkretnym srodowisku Render (seria bledow post-processingu
+# pokazala, ze proces budowania/kopiowania plikow do STATIC_ROOT nie
+# jest w 100% przewidywalny).
+#
+# WHITENOISE_USE_FINDERS = True sprawia, ze WhiteNoise NIE zalezy
+# WYLACZNIE od STATIC_ROOT - szuka plikow TAKZE wprost w
+# STATICFILES_DIRS (czyli w commitowanym katalogu 'static/' naszego
+# projektu), ktory ZAWSZE istnieje w repo, niezaleznie od tego co sie
+# dzieje z collectstatic. To ELIMINUJE cala klase bledow "plik nie
+# zostal znaleziony w runtime, mimo ze build przeszedl".
+WHITENOISE_USE_FINDERS = True
+
 STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
