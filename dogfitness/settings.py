@@ -110,60 +110,35 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # statyczne (wymagane przez Render - bez tego 'collectstatic' nie ma gdzie
 # zapisac plikow, a WhiteNoise nie ma czego serwowac na produkcji).
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# WhiteNoise - serwuje pliki statyczne (CSS, fonty) bezposrednio z Django,
-# bez potrzeby osobnego serwera (nginx) - wystarczajace dla skali tej
-# aplikacji. CompressedManifestStaticFilesStorage dodaje hash do nazwy
-# pliku (cache busting) i kompresuje gzip/brotli przy 'collectstatic'.
-#
-# WAZNE: Django 5.1+ USUNAL wsparcie dla starego ustawienia
-# 'STATICFILES_STORAGE' (string) - jest teraz CICHO ignorowane, bez
-# bledu/ostrzezenia! Trzeba uzyc nowego formatu 'STORAGES' (dict).
-# Bez tego CSS/fonty sa serwowane bez hasha w nazwie pliku - przegladarka
-#/CDN moze cache'owac stara wersje pod tym samym URL-em, co przy kazdym
-# redeployu grozi bledem typu "corrupted content" (niezgodna zawartosc
-# pod tym samym adresem miedzy wersjami).
-# WAZNE (kompatybilnosc z django-cloudinary-storage 0.3.0):
-# Ta biblioteka ma WLASNY kod obslugi 'collectstatic', ktory wewnetrznie
-# odwoluje sie do STAREGO ustawienia 'STATICFILES_STORAGE' (string) -
-# nie zostala zaktualizowana pod Django 5.1+, ktory usunal to ustawienie
-# na rzecz 'STORAGES' (dict). Trzymamy WIEC OBIE nazwy - w 100% bezpieczne.
-# WAZNE - DEFINITYWNE ROZWIAZANIE problemu "plik X nie zostal znaleziony"
-# (sorting-icons.svg, icon-yes.svg, itd.) ktory wielokrotnie psul build
-# na Render:
-#
-# 'CompressedManifestStaticFilesStorage' (poprzedni backend) oprocz
-# kompresji dodaje HASH do nazwy KAZDEGO pliku statycznego (cache-
-# busting), a do tego PRZY TEJ OKAZJI probuje otworzyc/zweryfikowac
-# KAZDY plik, do ktorego odwoluje sie jakikolwiek CSS/JS (np.
-# url(../img/cos.svg) w plikach panelu Django /admin/, ktorych NIE
-# kontrolujemy). Jesli JAKIKOLWIEK z tych plikow nie jest widoczny w
-# danym momencie na serwerze budujacym (z przyczyn poza nasza kontrola,
-# specyficznych dla Render) - CALY build pada z bledem.
-#
-# 'CompressedStaticFilesStorage' robi TYLKO kompresje (gzip/brotli) -
-# BEZ hashowania nazw i BEZ weryfikowania zadnych referencji w CSS/JS.
-# To CALKOWICIE i NA ZAWSZE eliminuje te klase bledow, bo mechanizm
-# ktory je powodowal juz nie jest uzywany.
-#
-# Jedyny "koszt": pliki CSS/JS nie majа hasha w nazwie - po zmianie CSS
-# czasem warto zrobic hard-refresh (Ctrl+Shift+R) w przegladarce. To
-# drobiazg kosmetyczny, nieporownywalny z bledem wywalajacym cala
-# produkcje.
-_STATICFILES_BACKEND = (
-    'whitenoise.storage.CompressedStaticFilesStorage' if not DEBUG
-    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
-)
-STATICFILES_STORAGE = _STATICFILES_BACKEND
 
-# WHITENOISE_MANIFEST_STRICT = False: siatka bezpieczenstwa. Domyslnie
-# (True) WhiteNoise PRZERYWA caly 'collectstatic' (a wiec caly build na
-# Render) jesli JAKIKOLWIEK plik CSS/JS odwoluje sie do pliku, ktory nie
-# istnieje (np. plik admina Django w niezgodnej/uszkodzonej wersji
-# pakietu w cache serwera budujacego - co bylo przyczyna bledu
-# 'sorting-icons.svg could not be found'). Ustawiajac False, taki JEDEN
-# brakujacy plik jest cicho pomijany, a reszta plikow nadal dostaje
-# poprawny hash - build NIE PADA z tego powodu.
-WHITENOISE_MANIFEST_STRICT = False
+# ============ DEFINITYWNE ROZWIAZANIE (po wielu nieudanych podejsciach) ============
+# HISTORIA PROBLEMU: Django/WhiteNoise majа mechanizm "post-processing"
+# plikow statycznych (hashowanie nazw dla cache-bustingu I/LUB kompresja
+# gzip/brotli), ktory przy KAZDYM wdrozeniu na Render PRZERYWAL caly
+# build z powodu:
+#   1. Brakujacych plikow panelu Django /admin/ (sorting-icons.svg,
+#      icon-yes.svg) - przyczyna poza nasza kontrola (specyfika
+#      srodowiska budowania Render).
+#   2. Wyscigu wielowatkowej kompresji (ThreadPoolExecutor), ktory
+#      czasem odwolywal sie do plikow w trakcie ich usuwania/nadpisywania.
+#
+# KAZDA z tych usterek jest CZESCIA mechanizmu post-processingu - nie da
+# sie ich "naprawic" pojedynczo, bo kolejna wyskakuje przy nastepnym
+# wdrozeniu. JEDYNE DEFINITYWNE rozwiazanie: CALKOWICIE WYLACZYC
+# post-processing. Uzywamy wiec zwyklego, "glupiego" kopiowania plikow
+# (StaticFilesStorage) ZAWSZE - rowniez na produkcji - BEZ hashowania,
+# BEZ kompresji, BEZ weryfikowania jakichkolwiek wewnetrznych odwolan w
+# CSS/JS. 'collectstatic' teraz tylko KOPIUJE pliki 1:1 - nic wiecej nie
+# moze sie w tym kroku zepsuc, bo nie ma nic do zepsucia.
+#
+# WhiteNoise middleware (w MIDDLEWARE powyzej) i tak poprawnie serwuje
+# te pliki na produkcji - kompresja/hashowanie byly tylko optymalizacja
+# wydajnosci, NIE wymogiem dzialania. Jedyny praktyczny "koszt": po
+# zmianie CSS/JS czasem warto zrobic hard-refresh (Ctrl+Shift+R) w
+# przegladarce, zamiast automatycznego cache-bustingu. To jest drobiazg
+# kosmetyczny, nieporownywalny z bledem wywalajacym cala produkcje.
+_STATICFILES_BACKEND = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+STATICFILES_STORAGE = _STATICFILES_BACKEND
 
 STORAGES = {
     'default': {
