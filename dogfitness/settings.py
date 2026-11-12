@@ -127,8 +127,30 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # odwoluje sie do STAREGO ustawienia 'STATICFILES_STORAGE' (string) -
 # nie zostala zaktualizowana pod Django 5.1+, ktory usunal to ustawienie
 # na rzecz 'STORAGES' (dict). Trzymamy WIEC OBIE nazwy - w 100% bezpieczne.
+# WAZNE - DEFINITYWNE ROZWIAZANIE problemu "plik X nie zostal znaleziony"
+# (sorting-icons.svg, icon-yes.svg, itd.) ktory wielokrotnie psul build
+# na Render:
+#
+# 'CompressedManifestStaticFilesStorage' (poprzedni backend) oprocz
+# kompresji dodaje HASH do nazwy KAZDEGO pliku statycznego (cache-
+# busting), a do tego PRZY TEJ OKAZJI probuje otworzyc/zweryfikowac
+# KAZDY plik, do ktorego odwoluje sie jakikolwiek CSS/JS (np.
+# url(../img/cos.svg) w plikach panelu Django /admin/, ktorych NIE
+# kontrolujemy). Jesli JAKIKOLWIEK z tych plikow nie jest widoczny w
+# danym momencie na serwerze budujacym (z przyczyn poza nasza kontrola,
+# specyficznych dla Render) - CALY build pada z bledem.
+#
+# 'CompressedStaticFilesStorage' robi TYLKO kompresje (gzip/brotli) -
+# BEZ hashowania nazw i BEZ weryfikowania zadnych referencji w CSS/JS.
+# To CALKOWICIE i NA ZAWSZE eliminuje te klase bledow, bo mechanizm
+# ktory je powodowal juz nie jest uzywany.
+#
+# Jedyny "koszt": pliki CSS/JS nie majа hasha w nazwie - po zmianie CSS
+# czasem warto zrobic hard-refresh (Ctrl+Shift+R) w przegladarce. To
+# drobiazg kosmetyczny, nieporownywalny z bledem wywalajacym cala
+# produkcje.
 _STATICFILES_BACKEND = (
-    'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
+    'whitenoise.storage.CompressedStaticFilesStorage' if not DEBUG
     else 'django.contrib.staticfiles.storage.StaticFilesStorage'
 )
 STATICFILES_STORAGE = _STATICFILES_BACKEND
